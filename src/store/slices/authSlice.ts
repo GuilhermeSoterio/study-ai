@@ -17,6 +17,6 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (set) 
 
   signOut: async () => {
     await supabase.auth.signOut()
-    set({ userId: null, userEmail: null, sessions: [], flashcards: [] })
+    set({ userId: null, userEmail: null, sessions: [], flashcards: [], loaded: false, character: null })
   },
 })

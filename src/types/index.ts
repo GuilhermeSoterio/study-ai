@@ -8,7 +8,8 @@ export interface Session {
   total: number
   correct: number
   banca: string
-  source?: string
+  source?:     string
+  error_type?: 'nao_sabia' | 'distracao' | 'pegadinha' | 'tempo' | null
   created_at?: string
 }
 
@@ -71,6 +72,42 @@ export interface SessionStat {
   correct: number
   disc:    string
   mat:     string
+}
+
+export interface CharacterData {
+  user_id:       string
+  xp:            number
+  level:         number
+  level_title:   string
+  level_emoji:   string
+  xp_next_level: number
+  stats: {
+    total_questions:     number
+    total_correct:       number
+    accuracy:            number
+    streak:              number
+    best_streak:         number
+    subjects_studied:    number
+    disciplines_studied: number
+  }
+  achievements: {
+    id:          string
+    label:       string
+    description: string
+    unlocked:    boolean
+    unlocked_at: string | null
+  }[]
+}
+
+export interface DiaryEntry {
+  id:         string
+  user_id:    string
+  date:       string
+  atacou:     string
+  resistiu:   string
+  reforco:    string
+  created_at?: string
+  updated_at?: string
 }
 
 export type TabName =

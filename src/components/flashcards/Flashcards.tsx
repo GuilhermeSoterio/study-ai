@@ -9,7 +9,7 @@ type Section = 'review' | 'create' | 'bank'
 
 export function Flashcards() {
   const cards = useStore(s => s.flashcards)
-  const [section, setSection] = useState<Section>('review')
+  const [section, setSection] = useState<Section>('create')
   const due = dueCount(cards)
 
   const tabs: { id: Section; label: string; badge?: number }[] = [

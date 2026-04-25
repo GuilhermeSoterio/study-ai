@@ -6,6 +6,12 @@ import { StatCard } from './StatCard'
 import { Heatmap } from './Heatmap'
 import { TopSubjects } from './TopSubjects'
 import { DailyChart, DiscChart } from './DashboardCharts'
+import { KpiPanel } from './KpiPanel'
+import { BancaPanel } from './BancaPanel'
+import { VulnAlert } from './VulnAlert'
+import { BattleMap } from './BattleMap'
+import { OperationMode } from './OperationMode'
+import { AchievementGallery } from './AchievementGallery'
 
 export function Dashboard() {
   const { total, correct, errors, streak, bestStreak, weekTotal, monthTotal } = useStats()
@@ -13,6 +19,9 @@ export function Dashboard() {
 
   return (
     <div className="space-y-3">
+      {/* Operação do Dia */}
+      <OperationMode />
+
       {/* Tip */}
       <div className="bg-surface2 border border-border rounded-card px-4 py-2.5 text-[12px] text-muted flex gap-2 items-start">
         <span>💡</span>
@@ -48,6 +57,15 @@ export function Dashboard() {
         />
       </div>
 
+      {/* KPIs por matéria */}
+      <KpiPanel />
+
+      {/* Mapa de Frentes */}
+      <BattleMap />
+
+      {/* Vulnerabilidades: banca × matéria */}
+      <VulnAlert />
+
       {/* Row 2: daily ring + daily chart */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <DailyRing />
@@ -64,6 +82,12 @@ export function Dashboard() {
         <TopSubjects />
         <DiscChart />
       </div>
+
+      {/* Análise por banca */}
+      <BancaPanel />
+
+      {/* Conquistas + Medalhas + Força de Elite */}
+      <AchievementGallery />
     </div>
   )
 }

@@ -3,11 +3,11 @@ import { useStore } from '@/store'
 import { Card, CardLabel } from '@/components/ui/Card'
 
 export function TopSubjects() {
-  const sessions = useStore(s => s.sessions)
+  const sessionStats = useStore(s => s.sessionStats)
 
   const subjects = useMemo(() => {
     const map: Record<string, { total: number; correct: number }> = {}
-    sessions.forEach(s => {
+    sessionStats.forEach(s => {
       if (!map[s.mat]) map[s.mat] = { total: 0, correct: 0 }
       map[s.mat].total += s.total
       map[s.mat].correct += s.correct
@@ -16,7 +16,7 @@ export function TopSubjects() {
       .map(([mat, v]) => ({ mat, ...v, pct: Math.round((v.correct / v.total) * 100) }))
       .sort((a, b) => b.total - a.total)
       .slice(0, 8)
-  }, [sessions])
+  }, [sessionStats])
 
   const max = subjects[0]?.total ?? 1
 

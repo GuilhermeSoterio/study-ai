@@ -60,13 +60,13 @@ export function useStats() {
 
     const weekStart    = new Date()
     weekStart.setDate(weekStart.getDate() - 6)
-    const weekTotal    = sessions
+    const weekTotal    = sessionStats
       .filter(s => s.date >= weekStart.toISOString().slice(0, 10))
       .reduce((s, r) => s + r.total, 0)
 
     const monthStart   = new Date()
     monthStart.setDate(1)
-    const monthTotal   = sessions
+    const monthTotal   = sessionStats
       .filter(s => s.date >= monthStart.toISOString().slice(0, 10))
       .reduce((s, r) => s + r.total, 0)
 

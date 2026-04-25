@@ -16,10 +16,10 @@ export function DailyRing() {
       <div className="flex items-center gap-3">
         <div className="relative w-14 h-14 shrink-0">
           <svg className="w-full h-full -rotate-90" viewBox="0 0 56 56">
-            <circle cx="28" cy="28" r={r} fill="none" stroke="#1e1e35" strokeWidth="5" />
+            <circle cx="28" cy="28" r={r} fill="none" stroke="#e2e8f0" strokeWidth="5" />
             <circle
               cx="28" cy="28" r={r} fill="none"
-              stroke="#06b6d4" strokeWidth="5"
+              stroke="#d4a017" strokeWidth="5"
               strokeDasharray={`${dash} ${circ}`}
               strokeLinecap="round"
               style={{ transition: 'stroke-dasharray .6s ease' }}

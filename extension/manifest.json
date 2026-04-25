@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "StudyBI · QConcursos",
+  "version": "1.0",
+  "description": "Registra automaticamente suas questões do QConcursos no StudyBI",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://www.qconcursos.com/*",
+    "https://*.supabase.co/*"
+  ],
+  "content_scripts": [{
+    "matches": ["https://www.qconcursos.com/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "StudyBI"
+  }
+}

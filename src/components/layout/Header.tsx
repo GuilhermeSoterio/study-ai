@@ -4,12 +4,14 @@ import { useStore } from '@/store'
 const TABS = [
   { path: '/dashboard',  label: 'Dashboard' },
   { path: '/registrar',  label: '＋ Registrar' },
+  { path: '/diario',     label: '📔 Diário' },
   { path: '/analise',    label: 'Análise' },
   { path: '/historico',  label: 'Histórico' },
   { path: '/flashcards', label: '📇 Flashcards' },
   { path: '/materias',   label: '📋 Matérias' },
   { path: '/verbos',     label: '🔤 Verbos' },
   { path: '/personagem', label: '⚔️ Personagem' },
+  { path: '/relatorio',     label: 'Relatório' },
 ]
 
 export function Header() {

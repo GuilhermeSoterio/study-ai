@@ -13,24 +13,24 @@ const CHART_OPTIONS = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: { legend: { display: false }, tooltip: {
-    backgroundColor: '#17172a',
-    borderColor: '#28283f',
+    backgroundColor: '#ffffff',
+    borderColor: '#cbd5e1',
     borderWidth: 1,
-    titleColor: '#eeeeff',
-    bodyColor: '#7878a0',
+    titleColor: '#0f172a',
+    bodyColor: '#64748b',
   }},
   scales: {
-    x: { grid: { color: '#28283f33' }, ticks: { color: '#7878a0', font: { size: 10 } } },
-    y: { grid: { color: '#28283f33' }, ticks: { color: '#7878a0', font: { size: 10 } } },
+    x: { grid: { color: '#cbd5e133' }, ticks: { color: '#64748b', font: { size: 10 } } },
+    y: { grid: { color: '#cbd5e133' }, ticks: { color: '#64748b', font: { size: 10 } } },
   },
 } as const
 
 export function DailyChart() {
-  const sessions = useStore(s => s.sessions)
+  const sessionStats = useStore(s => s.sessionStats)
 
   const chartData = useMemo(() => {
     const map: Record<string, number> = {}
-    sessions.forEach(s => { map[s.date] = (map[s.date] ?? 0) + s.total })
+    sessionStats.forEach(s => { map[s.date] = (map[s.date] ?? 0) + s.total })
     const labels: string[] = []
     const values: number[] = []
     const today = new Date()
@@ -43,9 +43,9 @@ export function DailyChart() {
     }
     return {
       labels,
-      datasets: [{ data: values, backgroundColor: '#7c3aed', borderRadius: 4, hoverBackgroundColor: '#9d4edd' }],
+      datasets: [{ data: values, backgroundColor: '#4a7c59', borderRadius: 4, hoverBackgroundColor: '#3a6648' }],
     }
-  }, [sessions])
+  }, [sessionStats])
 
   return (
     <Card>
@@ -58,12 +58,12 @@ export function DailyChart() {
 }
 
 export function DiscChart() {
-  const sessions = useStore(s => s.sessions)
-  const COLORS = ['#7c3aed','#06b6d4','#f59e0b','#10b981','#ef4444','#3b82f6','#f97316','#ec4899']
+  const sessionStats = useStore(s => s.sessionStats)
+  const COLORS = ['#4a7c59','#d4a017','#c0392b','#3a6648','#8b7355','#6b8e5a','#9a9485','#8b0000']
 
   const data = useMemo(() => {
     const map: Record<string, number> = {}
-    sessions.forEach(s => { map[s.disc] = (map[s.disc] ?? 0) + s.total })
+    sessionStats.forEach(s => { map[s.disc] = (map[s.disc] ?? 0) + s.total })
     const total = Object.values(map).reduce((a, b) => a + b, 0) || 1
     return Object.entries(map)
       .sort((a, b) => b[1] - a[1])
@@ -74,7 +74,7 @@ export function DiscChart() {
         pct: Math.round((count / total) * 100),
         color: COLORS[i % COLORS.length],
       }))
-  }, [sessions])
+  }, [sessionStats])
 
   if (!data.length) return null
 

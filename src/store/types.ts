@@ -1,4 +1,5 @@
-import type { Session, SessionStat, Flashcard, UserConfig, VerbConjugation, VerbSession } from '@/types'
+import type { Session, SessionStat, Flashcard, UserConfig, VerbConjugation, VerbSession, CharacterData } from '@/types'
+import type { TNode } from '@/components/personagem/types'
 
 export interface AppState {
   // ── Auth ──────────────────────────────────────────────────────────────
@@ -24,12 +25,16 @@ export interface AppState {
   removeFlashcard:  (id: string) => void
 
   // ── Config ────────────────────────────────────────────────────────────
-  config:     UserConfig
-  bancas:     string[]
-  disc:       Record<string, string[]>
+  config:    UserConfig
+  bancas:    string[]
+  disc:      Record<string, string[]>
+  skillTree: TNode[]
+  character: CharacterData | null
   saveConfig: (cfg: Partial<UserConfig>) => Promise<void>
+  saveDisc:   (disc: Record<string, string[]>) => Promise<void>
 
   // ── UI ────────────────────────────────────────────────────────────────
   loading: boolean
+  loaded:  boolean
   loadAll: () => Promise<void>
 }

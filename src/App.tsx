@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useStore } from '@/store'
+import { setBackendToken } from '@/lib/backendApi'
 import { Header }       from '@/components/layout/Header'
 import { Login }        from '@/components/layout/Login'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
@@ -13,7 +14,8 @@ export default function App() {
   const loadAll = useStore(s => s.loadAll)
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setBackendToken(session?.access_token ?? null)
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') loadAll()
     })
     return () => subscription.unsubscribe()

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useStore } from '@/store'
 import { isDue, calcNextDue, dueCount } from '@/lib/srs'
 import type { Flashcard } from '@/types'
@@ -49,7 +49,6 @@ function CardView({ card, onRate }: CardViewProps) {
 
   return (
     <div className="space-y-4">
-      {/* Card flip */}
       <div
         className="relative cursor-pointer select-none"
         style={{ perspective: '1000px' }}
@@ -76,7 +75,7 @@ function CardView({ card, onRate }: CardViewProps) {
                 {card.banca}
               </span>
             </div>
-            <div className="text-text text-[15px] leading-relaxed font-medium text-center px-2">
+            <div className="text-text text-[15px] leading-relaxed font-medium text-center px-2 whitespace-pre-wrap">
               {card.q}
             </div>
             <div className="text-[11px] text-muted text-center">
@@ -107,7 +106,6 @@ function CardView({ card, onRate }: CardViewProps) {
         </div>
       </div>
 
-      {/* Rating buttons — só aparecem após virar */}
       {flipped && (
         <div className="grid grid-cols-3 gap-3">
           {([
@@ -117,7 +115,7 @@ function CardView({ card, onRate }: CardViewProps) {
           ]).map(({ rating, label, color }) => (
             <button
               key={rating}
-              onClick={() => onRate(rating)}
+              onClick={e => { e.stopPropagation(); onRate(rating) }}
               className={`py-3 rounded-card border font-bold text-sm transition-all ${color}`}
             >
               {label}
@@ -129,6 +127,11 @@ function CardView({ card, onRate }: CardViewProps) {
   )
 }
 
+function buildQueue(filter: string, source: Flashcard[]): Flashcard[] {
+  const filtered = filter === 'all' ? source : source.filter(c => c.disc === filter)
+  return filtered.filter(c => isDue(c.reviews))
+}
+
 export function FlashcardReview() {
   const cards = useStore(s => s.flashcards)
   const updateFlashcard = useStore(s => s.updateFlashcard)
@@ -136,16 +139,15 @@ export function FlashcardReview() {
   const userId = useStore(s => s.userId)
 
   const [discFilter, setDiscFilter] = useState('all')
-  const [currentIdx, setCurrentIdx] = useState(0)
   const [sessionCount, setSessionCount] = useState(0)
-  const [done, setDone] = useState(false)
 
-  const queue = useMemo(() => {
-    const filtered = discFilter === 'all' ? cards : cards.filter(c => c.disc === discFilter)
-    return filtered.filter(c => isDue(c.reviews))
-  }, [cards, discFilter])
+  // Snapshot queue: fixed at session start, never reacts to store changes mid-session
+  // Advance by slicing the head — no index state, no stale-closure bugs
+  const [queue, setQueue] = useState<Flashcard[]>(() => buildQueue('all', cards))
+  const [initialTotal, setInitialTotal] = useState(() => buildQueue('all', cards).length)
 
-  const current = queue[currentIdx]
+  const current = queue[0]
+  const remaining = queue.length
 
   function handleRate(rating: 1 | 2 | 3) {
     if (!current) return
@@ -154,7 +156,6 @@ export function FlashcardReview() {
     const updated = [...current.reviews, { ts: Date.now(), rating, nextDue }]
     updateFlashcard(current.id, { reviews: updated })
 
-    // Registra como sessão na primeira revisão
     if (isFirst && userId) {
       addSession({
         id: crypto.randomUUID(),
@@ -171,23 +172,25 @@ export function FlashcardReview() {
     }
 
     setSessionCount(n => n + 1)
-    if (currentIdx + 1 >= queue.length) {
-      setDone(true)
-    } else {
-      setCurrentIdx(i => i + 1)
-    }
+    setQueue(q => q.slice(1))
   }
 
-  function restart() {
-    setCurrentIdx(0)
+  function restart(filter?: string) {
+    const f = filter ?? discFilter
+    const newQ = buildQueue(f, cards)
+    setQueue(newQ)
+    setInitialTotal(newQ.length)
     setSessionCount(0)
-    setDone(false)
   }
 
-  if (done || queue.length === 0) {
+  const hardCards = queue.filter(c =>
+    c.reviews.length > 0 && c.reviews[c.reviews.length - 1].rating === 1
+  )
+
+  if (remaining === 0) {
     return (
       <div className="space-y-4">
-        <DiscFilter value={discFilter} onChange={d => { setDiscFilter(d); restart() }} />
+        <DiscFilter value={discFilter} onChange={d => { setDiscFilter(d); restart(d) }} />
         <div className="bg-surface border border-border rounded-card p-12 text-center space-y-3">
           <div className="text-5xl">{sessionCount > 0 ? '🎉' : '😴'}</div>
           <div className="text-xl font-bold text-text">
@@ -200,14 +203,12 @@ export function FlashcardReview() {
               ? 'Ótimo trabalho! Continue revisando amanhã.'
               : 'Crie novos cards ou volte mais tarde.'}
           </div>
-          {sessionCount > 0 && (
+          {hardCards.length > 0 && (
             <button
-              onClick={restart}
+              onClick={() => restart()}
               className="mt-2 px-5 py-2 bg-surface2 border border-border rounded-sm text-sm text-muted hover:text-text transition-all"
             >
-              🔁 Revisar erros ({queue.filter(c =>
-                c.reviews.length > 0 && c.reviews[c.reviews.length - 1].rating === 1
-              ).length})
+              🔁 Revisar difíceis ({hardCards.length})
             </button>
           )}
         </div>
@@ -215,19 +216,20 @@ export function FlashcardReview() {
     )
   }
 
+  const progress = initialTotal > 0 ? ((initialTotal - remaining) / initialTotal) * 100 : 0
+
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
-      <DiscFilter value={discFilter} onChange={d => { setDiscFilter(d); restart() }} />
+      <DiscFilter value={discFilter} onChange={d => { setDiscFilter(d); restart(d) }} />
 
-      {/* Progresso */}
       <div className="flex justify-between items-center text-xs text-muted">
-        <span>{currentIdx + 1} de {queue.length} cards</span>
+        <span>{initialTotal - remaining + 1} de {initialTotal} cards</span>
         <span>{sessionCount} revisados nesta sessão</span>
       </div>
       <div className="bg-surface3 rounded-full h-1 overflow-hidden">
         <div
           className="pbar-fill h-full rounded-full"
-          style={{ width: `${((currentIdx) / queue.length) * 100}%` }}
+          style={{ width: `${progress}%` }}
         />
       </div>
 
