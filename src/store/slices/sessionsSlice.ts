@@ -5,7 +5,7 @@ import type { AppState } from '../types'
 import { toast } from '../toastStore'
 
 export type SessionsSlice = Pick<AppState,
-  'sessions' | 'sessionStats' | 'addSession' | 'removeSession'
+  'sessions' | 'sessionStats' | 'addSession' | 'updateSession' | 'removeSession'
 >
 
 export const createSessionsSlice: StateCreator<AppState, [], [], SessionsSlice> = (set, get) => ({
@@ -31,6 +31,21 @@ export const createSessionsSlice: StateCreator<AppState, [], [], SessionsSlice> 
         }
       })
     }
+  },
+
+  updateSession: (id, updates) => {
+    const prev     = get().sessions
+    const prevStat = get().sessionStats
+    set(s => ({
+      sessions:     s.sessions.map(x => x.id === id ? { ...x, ...updates } : x),
+      sessionStats: s.sessionStats.map(x => x.id === id ? { ...x, ...updates } : x),
+    }))
+    supabase.from('sessions').update(updates).eq('id', id).then(({ error }) => {
+      if (error) {
+        set({ sessions: prev, sessionStats: prevStat })
+        toast.error('Erro ao atualizar sessão.')
+      }
+    })
   },
 
   removeSession: (id: string) => {

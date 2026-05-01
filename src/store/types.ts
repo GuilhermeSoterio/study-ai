@@ -14,6 +14,7 @@ export interface AppState {
   /** Todas as sessions, só 6 colunas — para stats all-time e skill tree. */
   sessionStats:  SessionStat[]
   addSession:    (session: Session) => void
+  updateSession: (id: string, updates: Partial<Pick<Session, 'correct' | 'total' | 'disc' | 'mat' | 'banca' | 'date'>>) => void
   removeSession: (id: string) => void
 
   // ── Flashcards ────────────────────────────────────────────────────────
