@@ -3,7 +3,7 @@ import { useStore } from '@/store'
 import { useMedals, type MatMedal } from '@/hooks/useMedals'
 
 const DEFAULT_TARGET = 75
-const LS_KEY = 'studybi_kpi_targets'
+const LS_KEY = 'newage_kpi_targets'
 
 function loadTargets(): Record<string, number> {
   try { return JSON.parse(localStorage.getItem(LS_KEY) ?? '{}') } catch { return {} }

@@ -12,6 +12,7 @@ import { VulnAlert } from './VulnAlert'
 import { BattleMap } from './BattleMap'
 import { OperationMode } from './OperationMode'
 import { AchievementGallery } from './AchievementGallery'
+import { MoralBar } from './MoralBar'
 
 export function Dashboard() {
   const { total, correct, errors, streak, bestStreak, weekTotal, monthTotal } = useStats()
@@ -19,19 +20,43 @@ export function Dashboard() {
 
   return (
     <div className="space-y-3">
-      {/* Operação do Dia */}
-      <OperationMode />
 
-      {/* Tip */}
-      <div className="bg-surface2 border border-border rounded-card px-4 py-2.5 text-[12px] text-muted flex gap-2 items-start">
-        <span>💡</span>
-        <span>{tip}</span>
+      {/* ── COCKPIT ─────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr_1fr] gap-3 items-start">
+
+        {/* LEFT — Status do Personagem */}
+        <div className="space-y-3">
+          <div className="font-display font-bold text-muted uppercase px-0.5" style={{ fontSize: 11, letterSpacing: '0.22em' }}>
+            ● Status do Personagem
+          </div>
+          <GoalCard />
+          <MoralBar />
+        </div>
+
+        {/* CENTER — Mapa de Batalha */}
+        <div className="space-y-3">
+          <div className="font-display font-bold text-muted uppercase px-0.5" style={{ fontSize: 11, letterSpacing: '0.22em' }}>
+            ● Mapa de Batalha
+          </div>
+          <OperationMode />
+          <div className="bg-surface2 border border-border rounded-card px-4 py-2.5 text-[12px] text-muted flex gap-2 items-start">
+            <span>💡</span>
+            <span>{tip}</span>
+          </div>
+          <BattleMap />
+        </div>
+
+        {/* RIGHT — Próximos Alvos */}
+        <div className="space-y-3">
+          <div className="font-display font-bold text-muted uppercase px-0.5" style={{ fontSize: 11, letterSpacing: '0.22em' }}>
+            ● Próximos Alvos
+          </div>
+          <VulnAlert />
+        </div>
+
       </div>
 
-      {/* Big goal */}
-      <GoalCard />
-
-      {/* Row 1: streak + daily + erros + accuracy */}
+      {/* ── STATS ROW ───────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
           label="🔥 Streak"
@@ -57,16 +82,9 @@ export function Dashboard() {
         />
       </div>
 
-      {/* KPIs por matéria */}
+      {/* ── ANÁLISE ─────────────────────────────────────────────────────────── */}
       <KpiPanel />
 
-      {/* Mapa de Frentes */}
-      <BattleMap />
-
-      {/* Vulnerabilidades: banca × matéria */}
-      <VulnAlert />
-
-      {/* Row 2: daily ring + daily chart */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <DailyRing />
         <div className="md:col-span-2">
@@ -74,19 +92,15 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Row 3: heatmap */}
       <Heatmap />
 
-      {/* Row 4: top subjects + disc chart */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <TopSubjects />
         <DiscChart />
       </div>
 
-      {/* Análise por banca */}
       <BancaPanel />
 
-      {/* Conquistas + Medalhas + Força de Elite */}
       <AchievementGallery />
     </div>
   )

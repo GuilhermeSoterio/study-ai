@@ -6,27 +6,38 @@ import {
 } from 'chart.js'
 import { useStore } from '@/store'
 import { Card, CardLabel } from '@/components/ui/Card'
+import { localDate } from '@/lib/utils'
+import { useTheme } from '@/hooks/useTheme'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
 
-const CHART_OPTIONS = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: { legend: { display: false }, tooltip: {
-    backgroundColor: '#ffffff',
-    borderColor: '#cbd5e1',
-    borderWidth: 1,
-    titleColor: '#0f172a',
-    bodyColor: '#64748b',
-  }},
-  scales: {
-    x: { grid: { color: '#cbd5e133' }, ticks: { color: '#64748b', font: { size: 10 } } },
-    y: { grid: { color: '#cbd5e133' }, ticks: { color: '#64748b', font: { size: 10 } } },
-  },
-} as const
+function makeChartOptions(dark: boolean) {
+  const tooltipBg   = dark ? '#161b22' : '#ffffff'
+  const tooltipBdr  = dark ? '#30363d' : '#cbd5e1'
+  const titleColor  = dark ? '#e6edf3' : '#0f172a'
+  const bodyColor   = dark ? '#8b949e' : '#64748b'
+  const gridColor   = dark ? 'rgba(48,54,61,0.5)' : '#cbd5e133'
+  const tickColor   = dark ? '#8b949e' : '#64748b'
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: {
+      backgroundColor: tooltipBg,
+      borderColor: tooltipBdr,
+      borderWidth: 1,
+      titleColor,
+      bodyColor,
+    }},
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10 } } },
+      y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10 } } },
+    },
+  } as const
+}
 
 export function DailyChart() {
   const sessionStats = useStore(s => s.sessionStats)
+  const { dark } = useTheme()
 
   const chartData = useMemo(() => {
     const map: Record<string, number> = {}
@@ -37,7 +48,7 @@ export function DailyChart() {
     for (let i = 13; i >= 0; i--) {
       const d = new Date(today)
       d.setDate(d.getDate() - i)
-      const key = d.toISOString().slice(0, 10)
+      const key = localDate(d)
       labels.push(key.slice(5))
       values.push(map[key] ?? 0)
     }
@@ -51,7 +62,7 @@ export function DailyChart() {
     <Card>
       <CardLabel>Questões por dia — 14 dias</CardLabel>
       <div className="h-36">
-        <Bar data={chartData} options={CHART_OPTIONS} />
+        <Bar data={chartData} options={makeChartOptions(dark)} />
       </div>
     </Card>
   )

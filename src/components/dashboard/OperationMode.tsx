@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useStats } from '@/hooks/useStats'
+import { localDate } from '@/lib/utils'
 
 interface Operation {
   name: string
@@ -7,8 +8,8 @@ interface Operation {
   date: string
 }
 
-const LS_KEY = 'studybi_op'
-const today  = () => new Date().toISOString().slice(0, 10)
+const LS_KEY = 'newage_op'
+const today  = () => localDate()
 
 function loadOp(): Operation | null {
   try {

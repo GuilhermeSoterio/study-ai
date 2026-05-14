@@ -68,34 +68,34 @@ function useVulnerabilities(accuracyThreshold: number, inactivityDays: number): 
 
 // ── Entry row ─────────────────────────────────────────────────────────────────
 
-function TriggerBadge({ type, taxa, days }: { type: Trigger; taxa: number; days: number }) {
-  if (type === 'accuracy') {
-    return (
-      <span className="text-[9px] font-black px-1.5 py-0.5 rounded border bg-danger/10 text-danger border-danger/30 whitespace-nowrap">
-        ⚠ {taxa}% acerto
-      </span>
-    )
+function reasonText(triggers: Trigger[], taxa: number, days: number, accuracyThreshold: number): string {
+  if (triggers.length === 2) {
+    return `Sem revisão há ${days} dias e acerto em ${taxa}%`
   }
-  return (
-    <span className="text-[9px] font-black px-1.5 py-0.5 rounded border bg-warning/10 text-warning border-warning/30 whitespace-nowrap">
-      💤 {days}d sem sessão
-    </span>
-  )
+  if (triggers.includes('inactive')) {
+    return `Sem revisão há ${days} dias`
+  }
+  return `Acerto em ${taxa}% — abaixo do limite de ${accuracyThreshold}%`
 }
 
-function VulnRow({ entry }: { entry: VulnEntry }) {
+function VulnRow({ entry, accuracyThreshold }: { entry: VulnEntry; accuracyThreshold: number }) {
   const both = entry.triggers.length === 2
+  const reason = reasonText(entry.triggers, entry.taxa, entry.daysSince, accuracyThreshold)
+  const reasonColor = both
+    ? 'text-danger'
+    : entry.triggers.includes('inactive')
+    ? 'text-warning'
+    : 'text-danger'
+
   return (
     <div className={`flex items-center gap-3 py-2.5 border-b border-border/50 last:border-0 ${both ? 'bg-danger/[0.03] -mx-4 px-4 rounded-sm' : ''}`}>
       {/* Mat info */}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[12px] font-semibold text-text">{entry.mat}</span>
-          {entry.triggers.map(t => (
-            <TriggerBadge key={t} type={t} taxa={entry.taxa} days={entry.daysSince} />
-          ))}
+        <span className="text-[12px] font-semibold text-text">{entry.mat}</span>
+        <div className="text-[10px] text-muted mt-0.5">
+          {entry.disc}
+          <span className={`ml-1.5 font-semibold ${reasonColor}`}>· {reason}</span>
         </div>
-        <div className="text-[10px] text-muted mt-0.5">{entry.disc}</div>
       </div>
 
       {/* Bar + metrics */}
@@ -205,7 +205,7 @@ export function VulnAlert() {
 
       {/* Entries */}
       <div>
-        {visible.map(v => <VulnRow key={v.mat} entry={v} />)}
+        {visible.map(v => <VulnRow key={v.mat} entry={v} accuracyThreshold={accuracy} />)}
       </div>
 
       {vulns.length > 5 && (

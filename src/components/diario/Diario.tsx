@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useStore } from '@/store'
+import { localDate } from '@/lib/utils'
 import type { DiaryEntry } from '@/types'
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => localDate()
 
 function formatDate(date: string) {
   const d  = new Date(date + 'T12:00:00')
@@ -33,9 +34,11 @@ type FieldKey = 'atacou' | 'resistiu' | 'reforco'
 // ── Entry Form ────────────────────────────────────────────────────────────────
 
 function EntryForm({
+  date = today(),
   initial,
   onSaved,
 }: {
+  date?: string
   initial?: DiaryEntry
   onSaved: (entry: DiaryEntry) => void
 }) {
@@ -45,8 +48,8 @@ function EntryForm({
   const [saved,  setSaved]  = useState(false)
 
   useEffect(() => {
-    if (initial) setForm({ atacou: initial.atacou, resistiu: initial.resistiu, reforco: initial.reforco })
-  }, [initial?.id])
+    setForm({ atacou: initial?.atacou ?? '', resistiu: initial?.resistiu ?? '', reforco: initial?.reforco ?? '' })
+  }, [initial?.id, date])
 
   const valid = form.atacou.trim() && form.resistiu.trim() && form.reforco.trim()
 
@@ -57,7 +60,7 @@ function EntryForm({
 
     const payload = {
       user_id:    userId,
-      date:       today(),
+      date,
       atacou:     form.atacou.trim(),
       resistiu:   form.resistiu.trim(),
       reforco:    form.reforco.trim(),
@@ -83,6 +86,7 @@ function EntryForm({
   }
 
   const isEdit = !!initial
+  const isToday = date === today()
 
   return (
     <form onSubmit={submit} className="space-y-3">
@@ -105,13 +109,15 @@ function EntryForm({
 
       <div className="flex items-center justify-between pt-1">
         <span className="text-[10px] text-muted">
-          {isEdit ? '✎ Editando entrada de hoje' : '+ Nova entrada · ' + formatDate(today())}
+          {isEdit
+            ? `✎ Editando · ${formatDate(date)}`
+            : `+ Nova entrada · ${formatDate(date)}${isToday ? '' : ' (retroativo)'}`}
         </span>
         <button
           type="submit"
           disabled={!valid || saving}
           className="px-5 py-2 rounded-sm text-[12px] font-black tracking-wider text-white disabled:opacity-40 transition-opacity"
-          style={{ background: '#4a7c59' }}
+          style={{ background: isToday ? '#4a7c59' : '#b8860b' }}
         >
           {saving ? 'Salvando…' : saved ? '✓ Salvo!' : isEdit ? 'Atualizar' : 'Registrar'}
         </button>
@@ -130,8 +136,8 @@ function EntryCard({ entry, onEdit }: { entry: DiaryEntry; onEdit?: () => void }
     <div
       className="rounded-card overflow-hidden"
       style={{
-        border: isToday ? '1.5px solid rgba(74,124,89,0.4)' : '1px solid #e2e8f0',
-        background: isToday ? 'rgba(74,124,89,0.04)' : '#ffffff',
+        border: isToday ? '1.5px solid rgba(74,124,89,0.4)' : '1px solid rgb(var(--color-border))',
+        background: isToday ? 'rgba(74,124,89,0.04)' : 'rgb(var(--color-surface))',
       }}
     >
       {/* Header */}
@@ -154,7 +160,7 @@ function EntryCard({ entry, onEdit }: { entry: DiaryEntry; onEdit?: () => void }
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {onEdit && isToday && (
+          {onEdit && (
             <button
               onClick={e => { e.stopPropagation(); onEdit() }}
               className="text-[10px] text-muted hover:text-text px-2 py-0.5 border border-border rounded-sm transition-colors"
@@ -204,17 +210,27 @@ function EntryCard({ entry, onEdit }: { entry: DiaryEntry; onEdit?: () => void }
 
 // ── Root ──────────────────────────────────────────────────────────────────────
 
+const yesterday = () => {
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  return localDate(d)
+}
+
 export function Diario() {
   const userId = useStore(s => s.userId)
 
-  const [entries,  setEntries]  = useState<DiaryEntry[]>([])
-  const [loading,  setLoading]  = useState(true)
-  const [editing,  setEditing]  = useState(false)
-  const [search,   setSearch]   = useState('')
-  const [error,    setError]    = useState<string | null>(null)
+  const [entries,    setEntries]    = useState<DiaryEntry[]>([])
+  const [loading,    setLoading]    = useState(true)
+  const [editing,    setEditing]    = useState(false)
+  const [search,     setSearch]     = useState('')
+  const [error,      setError]      = useState<string | null>(null)
+  const [retroOpen,  setRetroOpen]  = useState(false)
+  const [retroDate,  setRetroDate]  = useState(yesterday)
+  const [editingEntry, setEditingEntry] = useState<string | null>(null)  // date string
 
   const todayEntry = entries.find(e => e.date === today())
   const showForm   = !todayEntry || editing
+  const retroEntry = entries.find(e => e.date === retroDate)
 
   useEffect(() => {
     if (!userId) return
@@ -241,6 +257,8 @@ export function Diario() {
       return [entry, ...without].sort((a, b) => b.date.localeCompare(a.date))
     })
     setEditing(false)
+    setRetroOpen(false)
+    setEditingEntry(null)
   }
 
   const filtered = useMemo(() => {
@@ -259,7 +277,7 @@ export function Diario() {
     let s = 0
     const d = new Date()
     while (true) {
-      const key = d.toISOString().slice(0, 10)
+      const key = localDate(d)
       if (!set.has(key)) break
       s++
       d.setDate(d.getDate() - 1)
@@ -312,7 +330,7 @@ export function Diario() {
         className="rounded-card p-5 space-y-4"
         style={{
           background: showForm ? 'rgba(74,124,89,0.04)' : undefined,
-          border: showForm ? '1.5px solid rgba(74,124,89,0.3)' : '1px solid #e2e8f0',
+          border: showForm ? '1.5px solid rgba(74,124,89,0.3)' : '1px solid rgb(var(--color-border))',
         }}
       >
         {showForm ? (
@@ -327,12 +345,57 @@ export function Diario() {
                 </button>
               )}
             </div>
-            <EntryForm initial={todayEntry} onSaved={handleSaved} />
+            <EntryForm date={today()} initial={todayEntry} onSaved={handleSaved} />
           </>
         ) : (
           todayEntry && <EntryCard entry={todayEntry} onEdit={() => setEditing(true)} />
         )}
       </div>
+
+      {/* ── Entrada retroativa ─────────────────────────────────────────────── */}
+      {!retroOpen ? (
+        <button
+          onClick={() => setRetroOpen(true)}
+          className="w-full py-2 rounded-sm border border-dashed text-[11px] font-bold tracking-wider transition-colors text-muted hover:text-text hover:border-accent"
+          style={{ borderColor: 'rgba(212,160,23,0.30)' }}
+        >
+          ↩ Registrar dia anterior
+        </button>
+      ) : (
+        <div
+          className="rounded-card p-5 space-y-4"
+          style={{ border: '1.5px solid rgba(212,160,23,0.35)', background: 'rgba(212,160,23,0.03)' }}
+        >
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#d4a017' }}>
+              ↩ Entrada retroativa
+            </span>
+            <div className="flex items-center gap-2 ml-auto">
+              <input
+                type="date"
+                value={retroDate}
+                max={yesterday()}
+                min={(() => { const d = new Date(); d.setFullYear(d.getFullYear() - 1); return localDate(d) })()}
+                onChange={e => setRetroDate(e.target.value)}
+                className="text-[12px] bg-surface2 border border-border rounded-sm px-2.5 py-1 text-text outline-none focus:border-accent"
+                style={{ colorScheme: 'dark' }}
+              />
+              <button
+                onClick={() => setRetroOpen(false)}
+                className="text-[11px] text-muted hover:text-text transition-colors"
+              >
+                cancelar
+              </button>
+            </div>
+          </div>
+          {retroEntry && (
+            <div className="text-[10px] text-accent font-bold">
+              ⚠ Já existe uma entrada para este dia — ela será sobrescrita ao salvar.
+            </div>
+          )}
+          <EntryForm date={retroDate} initial={retroEntry} onSaved={handleSaved} />
+        </div>
+      )}
 
       {/* Search + log */}
       {entries.filter(e => e.date !== today()).length > 0 && (
@@ -353,7 +416,27 @@ export function Diario() {
             <div className="space-y-2">
               {filtered
                 .filter(e => e.date !== today())
-                .map(entry => <EntryCard key={entry.id} entry={entry} />)
+                .map(entry => (
+                  editingEntry === entry.date ? (
+                    <div
+                      key={entry.id}
+                      className="rounded-card p-5 space-y-4"
+                      style={{ border: '1.5px solid rgba(212,160,23,0.35)', background: 'rgba(212,160,23,0.03)' }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: '#d4a017' }}>
+                          ✎ Editando · {formatDate(entry.date)}
+                        </span>
+                        <button onClick={() => setEditingEntry(null)} className="text-[10px] text-muted hover:text-text ml-auto">
+                          cancelar
+                        </button>
+                      </div>
+                      <EntryForm date={entry.date} initial={entry} onSaved={handleSaved} />
+                    </div>
+                  ) : (
+                    <EntryCard key={entry.id} entry={entry} onEdit={() => setEditingEntry(entry.date)} />
+                  )
+                ))
               }
             </div>
           )}

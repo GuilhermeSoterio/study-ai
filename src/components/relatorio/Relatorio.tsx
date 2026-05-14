@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useStore } from '@/store'
+import { localDate } from '@/lib/utils'
 import type { Flashcard, Session } from '@/types'
 import { WeeklyReport } from './WeeklyReport'
 
@@ -253,7 +254,7 @@ export function Relatorio() {
   }
 
   function downloadCsv() {
-    const date = new Date().toISOString().slice(0, 10)
+    const date = localDate()
     const rows: string[][] = [
       ['Enunciado', 'Resposta', 'Disciplina', 'Matéria', 'Banca', 'Origem', 'Acertos', 'Erros', 'Taxa (%)', 'Última Revisão', 'Último Rating'],
       ...filtered.map(r => {
@@ -277,7 +278,7 @@ export function Relatorio() {
     const blob   = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
     const url    = URL.createObjectURL(blob)
     const a      = document.createElement('a')
-    a.href = url; a.download = `studybi-questoes-${date}.csv`; a.click()
+    a.href = url; a.download = `newage-questoes-${date}.csv`; a.click()
     URL.revokeObjectURL(url)
   }
 

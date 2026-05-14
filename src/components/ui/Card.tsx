@@ -19,7 +19,7 @@ export function Card({ children, className = '', gradient = false }: Props) {
 
 export function CardLabel({ children }: { children: ReactNode }) {
   return (
-    <div className="text-[11px] font-bold uppercase tracking-widest text-muted mb-2.5">
+    <div className="font-display font-bold uppercase text-muted mb-2.5" style={{ fontSize: 12, letterSpacing: '0.22em' }}>
       {children}
     </div>
   )

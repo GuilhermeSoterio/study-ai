@@ -10,7 +10,14 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
       "Bash(pkill -f \"vite\")",
       "Read(//c/Users/guilh/projetos/study-bi/**)",
-      "Read(//c/Users/guilh/projetos/**)"
+      "Read(//c/Users/guilh/projetos/**)",
+      "Bash(node -e ' *)",
+      "Bash(node *)",
+      "Bash(xargs grep *)",
+      "Bash(dir C:\\\\projetos\\\\study-bi *)",
+      "Bash(Get-ChildItem \"C:\\\\projetos\\\\study-bi\\\\src\" -Filter \"types*\" -Recurse)",
+      "Bash(Select-Object FullName)",
+      "Bash(go build *)"
     ]
   }
 }

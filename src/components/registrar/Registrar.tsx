@@ -1,13 +1,15 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore } from '@/store'
+import { localDate } from '@/lib/utils'
 
-type ErrorType = 'nao_sabia' | 'distracao' | 'pegadinha' | 'tempo'
+type ErrorType = 'nao_sabia' | 'interpretacao' | 'distracao' | 'pegadinha' | 'tempo'
 
 const ERROR_OPTIONS: { value: ErrorType; label: string; desc: string; color: string }[] = [
-  { value: 'nao_sabia',  label: 'Não sabia',  desc: 'Conteúdo desconhecido',      color: 'border-danger/60 bg-danger/10 text-danger'   },
-  { value: 'distracao',  label: 'Distração',  desc: 'Li errado ou me enganei',    color: 'border-warning/60 bg-warning/10 text-warning' },
-  { value: 'pegadinha',  label: 'Pegadinha',  desc: 'A banca induziu ao erro',    color: 'border-accent/60 bg-accent/10 text-accent'   },
-  { value: 'tempo',      label: 'Tempo',      desc: 'Não tive tempo suficiente',  color: 'border-muted/60 bg-surface2 text-muted'      },
+  { value: 'nao_sabia',     label: 'Não sabia',     desc: 'Conteúdo desconhecido',      color: 'border-danger/60 bg-danger/10 text-danger'     },
+  { value: 'interpretacao', label: 'Interpretação',  desc: 'Sabia, mas não soube resolver', color: 'border-cyan-500/60 bg-cyan-500/10 text-cyan-400' },
+  { value: 'distracao',     label: 'Distração',     desc: 'Li errado ou me enganei',    color: 'border-warning/60 bg-warning/10 text-warning'   },
+  { value: 'pegadinha',     label: 'Pegadinha',     desc: 'A banca induziu ao erro',    color: 'border-accent/60 bg-accent/10 text-accent'     },
+  { value: 'tempo',         label: 'Tempo',         desc: 'Não tive tempo suficiente',  color: 'border-muted/60 bg-surface2 text-muted'        },
 ]
 
 export function Registrar() {
@@ -15,14 +17,20 @@ export function Registrar() {
   const bancas     = useStore(s => s.bancas)
   const addSession = useStore(s => s.addSession)
   const userId     = useStore(s => s.userId)
+  const sessions   = useStore(s => s.sessions)
 
   const [selectedDisc, setSelectedDisc] = useState('')
   const [selectedMat,  setSelectedMat]  = useState('')
   const [total,        setTotal]        = useState('')
   const [correct,      setCorrect]      = useState('')
   const [banca,        setBanca]        = useState('')
+  const [tema,         setTema]         = useState('')
   const [errorType,    setErrorType]    = useState<ErrorType | null>(null)
   const [saved,        setSaved]        = useState(false)
+
+  const existingTemas = useMemo(() =>
+    [...new Set(sessions.map(s => s.tema).filter((t): t is string => Boolean(t)))].sort(),
+  [sessions])
 
   const mats      = selectedDisc ? (disc[selectedDisc] ?? []) : []
   const totalNum  = parseInt(total)  || 0
@@ -39,7 +47,7 @@ export function Registrar() {
       id:         crypto.randomUUID(),
       user_id:    userId,
       ts:         Date.now(),
-      date:       new Date().toISOString().slice(0, 10),
+      date:       localDate(),
       disc:       selectedDisc,
       mat:        selectedMat,
       total:      totalNum,
@@ -47,10 +55,11 @@ export function Registrar() {
       banca,
       source:     'manual',
       error_type: hasErrors ? errorType : null,
+      tema:       tema.trim() || null,
     })
 
     // Reset
-    setTotal(''); setCorrect(''); setErrorType(null); setSaved(true)
+    setTotal(''); setCorrect(''); setTema(''); setErrorType(null); setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
 
@@ -159,6 +168,23 @@ export function Registrar() {
             </div>
           </div>
         )}
+
+        {/* Tema */}
+        <div className="space-y-1">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-muted">
+            Temática <span className="normal-case font-normal">(opcional)</span>
+          </label>
+          <input
+            list="temas-list"
+            value={tema}
+            onChange={e => setTema(e.target.value)}
+            placeholder="Ex: equivalência, negação, proporcionalidade…"
+            className="w-full bg-surface border border-border rounded-sm px-3 py-2 text-[13px] text-text outline-none focus:border-primary"
+          />
+          <datalist id="temas-list">
+            {existingTemas.map(t => <option key={t} value={t} />)}
+          </datalist>
+        </div>
 
         {/* Submit */}
         <button

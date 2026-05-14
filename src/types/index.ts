@@ -9,7 +9,8 @@ export interface Session {
   correct: number
   banca: string
   source?:     string
-  error_type?: 'nao_sabia' | 'distracao' | 'pegadinha' | 'tempo' | null
+  error_type?: 'nao_sabia' | 'interpretacao' | 'distracao' | 'pegadinha' | 'tempo' | null
+  tema?:       string | null
   created_at?: string
 }
 
@@ -23,6 +24,8 @@ export interface Flashcard {
   a: string
   banca: string
   reviews: FlashcardReview[]
+  correct?: boolean
+  ignored?: boolean
   created_at?: string
 }
 
@@ -30,6 +33,17 @@ export interface FlashcardReview {
   ts: number
   rating: 1 | 2 | 3
   nextDue: number
+}
+
+export interface Conceito {
+  id: string
+  user_id: string
+  ts: number
+  disc: string
+  mat: string
+  titulo: string
+  conteudo: string
+  reviews: FlashcardReview[]
 }
 
 export interface UserConfig {
@@ -72,6 +86,7 @@ export interface SessionStat {
   correct: number
   disc:    string
   mat:     string
+  tema?:   string | null
 }
 
 export interface CharacterData {
@@ -108,6 +123,30 @@ export interface DiaryEntry {
   reforco:    string
   created_at?: string
   updated_at?: string
+}
+
+export interface PurgeRecord {
+  id:             string
+  disc:           string
+  mat:            string
+  errors_cleared: number
+  purged_at:      string
+  created_at?:    string
+}
+
+export interface Questao {
+  id:          string
+  user_id:     string
+  ts:          number
+  date:        string
+  disc:        string
+  mat:         string
+  banca:       string
+  enunciado?:  string | null
+  correto:     boolean
+  error_type?: 'nao_sabia' | 'interpretacao' | 'distracao' | 'pegadinha' | 'tempo' | null
+  tema?:       string | null
+  created_at?: string
 }
 
 export type TabName =

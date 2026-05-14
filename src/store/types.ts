@@ -1,4 +1,4 @@
-import type { Session, SessionStat, Flashcard, UserConfig, VerbConjugation, VerbSession, CharacterData } from '@/types'
+import type { Session, SessionStat, Flashcard, Conceito, UserConfig, VerbConjugation, VerbSession, CharacterData, PurgeRecord, Questao } from '@/types'
 import type { TNode } from '@/components/personagem/types'
 
 export interface AppState {
@@ -13,8 +13,17 @@ export interface AppState {
   sessions:      Session[]
   /** Todas as sessions, só 6 colunas — para stats all-time e skill tree. */
   sessionStats:  SessionStat[]
-  addSession:    (session: Session) => void
-  updateSession: (id: string, updates: Partial<Pick<Session, 'correct' | 'total' | 'disc' | 'mat' | 'banca' | 'date'>>) => void
+  hasMoreSessions: boolean
+  addSession:       (session: Session) => void
+  updateSession:    (id: string, updates: Partial<Pick<Session, 'correct' | 'total' | 'disc' | 'mat' | 'banca' | 'date' | 'tema' | 'error_type'>>) => void
+  refreshSinceTs:   (since: number) => Promise<void>
+  loadMoreSessions: () => Promise<void>
+
+  // ── Questões individuais ──────────────────────────────────────────────
+  questoes:      Questao[]
+  addQuestao:    (q: Questao) => void
+  updateQuestao: (id: string, updates: Partial<Questao>) => void
+  removeQuestao: (id: string) => void
   removeSession: (id: string) => void
 
   // ── Flashcards ────────────────────────────────────────────────────────
@@ -25,6 +34,12 @@ export interface AppState {
   updateFlashcard:  (id: string, updates: Partial<Flashcard>) => void
   removeFlashcard:  (id: string) => void
 
+  // ── Conceitos ─────────────────────────────────────────────────────────
+  conceitos:      Conceito[]
+  addConceito:    (c: Conceito) => void
+  updateConceito: (id: string, updates: Partial<Conceito>) => void
+  removeConceito: (id: string) => void
+
   // ── Config ────────────────────────────────────────────────────────────
   config:    UserConfig
   bancas:    string[]
@@ -33,6 +48,15 @@ export interface AppState {
   character: CharacterData | null
   saveConfig: (cfg: Partial<UserConfig>) => Promise<void>
   saveDisc:   (disc: Record<string, string[]>) => Promise<void>
+
+  // ── Purge ─────────────────────────────────────────────────────────────
+  purgeRecords: PurgeRecord[]
+  executePurge: (p: {
+    disc:             string
+    mat:              string
+    errorsCleared:    number
+    challengeCorrect: number
+  }) => Promise<void>
 
   // ── UI ────────────────────────────────────────────────────────────────
   loading: boolean

@@ -69,7 +69,9 @@ function collectSubtreeMats(node: TNode): Set<string> {
   return mats
 }
 
-function normalize(s: string) { return s.toLowerCase().trim() }
+function normalize(s: string) {
+  return s.toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '')
+}
 
 function calcStats(node: TNode, sessions: SessionStat[], subtreeMats: Set<string>): NodeStats {
   const nodeDisc = node.disc ? normalize(node.disc) : null

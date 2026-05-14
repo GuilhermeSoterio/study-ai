@@ -7,8 +7,11 @@ import type { CharacterData, Session, Flashcard, SessionStat } from '@/types'
 import { createAuthSlice }       from './slices/authSlice'
 import { createSessionsSlice }   from './slices/sessionsSlice'
 import { createFlashcardsSlice } from './slices/flashcardsSlice'
+import { createConceitosSlice }  from './slices/conceitosSlice'
 import { createConfigSlice }     from './slices/configSlice'
+import { createPurgeSlice }      from './slices/purgeSlice'
 import { createUiSlice }         from './slices/uiSlice'
+import { createQuestoesSlice }   from './slices/questoesSlice'
 import { toast }                 from './toastStore'
 import type { AppState } from './types'
 
@@ -31,12 +34,36 @@ function discFromTree(nodes: TNode[]): Record<string, string[]> {
   return map
 }
 
+// Normaliza chaves de disc para bater com as formas canônicas (DEFAULT_DISC ou treeDisc),
+// evitando duplicatas por diferença de capitalização ("Direito constitucional" vs "Direito Constitucional").
+function canonicalizeDiscKeys(
+  data: Record<string, string[]>,
+  canonical: Record<string, string[]>,
+): Record<string, string[]> {
+  const normToCanon = new Map<string, string>()
+  for (const k of Object.keys(canonical)) {
+    normToCanon.set(k.toLowerCase().trim(), k)
+  }
+  const result: Record<string, string[]> = {}
+  for (const [k, mats] of Object.entries(data)) {
+    const canon = normToCanon.get(k.toLowerCase().trim()) ?? k
+    if (!result[canon]) result[canon] = []
+    for (const m of mats) {
+      if (!result[canon].includes(m)) result[canon].push(m)
+    }
+  }
+  return result
+}
+
 export const useStore = create<AppState>()((...a) => ({
   ...createAuthSlice(...a),
   ...createSessionsSlice(...a),
   ...createFlashcardsSlice(...a),
+  ...createConceitosSlice(...a),
   ...createConfigSlice(...a),
+  ...createPurgeSlice(...a),
   ...createUiSlice(...a),
+  ...createQuestoesSlice(...a),
 
   loadAll: async () => {
     const [set, get] = a
@@ -51,27 +78,35 @@ export const useStore = create<AppState>()((...a) => ({
 
     set({ userId: user.id, userEmail: user.email ?? null })
 
-    const [sr, ssR, cr, cfgR, bancasR, discR, treeR, charR] = await Promise.all([
+    const [sr, ssR, cr, concR, cfgR, bancasR, discR, discSupaR, treeR, charR, purgeR, questR] = await Promise.all([
       supabase.from('sessions')
         .select('*')
         .eq('user_id', user.id)
         .order('ts', { ascending: false })
         .limit(500),
       supabase.from('sessions')
-        .select('id,date,total,correct,disc,mat')
+        .select('id,date,total,correct,disc,mat,tema')
         .eq('user_id', user.id),
       supabase.from('flashcards').select('*').eq('user_id', user.id).limit(2000),
+      supabase.from('conceitos').select('*').eq('user_id', user.id).order('ts', { ascending: false }),
       supabase.from('user_config').select('*').eq('user_id', user.id).single(),
       supabase.from('bancas').select('*').eq('user_id', user.id).single(),
       backendApi.get<{ data: Record<string, string[]> }>('/v1/disciplines').catch(() => null),
+      supabase.from('disciplines').select('data').eq('user_id', user.id).single(),
       backendApi.get<{ data: TNode[] }>('/v1/skill-tree').catch(() => null),
       // Fix #1 — character carregado aqui uma vez, não a cada mount do PersonagemV2
       backendApi.get<{ data: CharacterData }>('/v1/character').catch(() => null),
+      supabase.from('purge_records').select('*').eq('user_id', user.id),
+      supabase.from('questoes').select('*').eq('user_id', user.id).order('ts', { ascending: false }).limit(2000),
     ])
 
     let cfgData    = cfgR.data
     let bancasData = bancasR.data
-    let discData   = discR?.data ?? null
+    // Supabase disciplines takes priority over backend (always up-to-date after saveDisc)
+    let discData: Record<string, string[]> | null =
+      (discSupaR.data as { data: Record<string, string[]> } | null)?.data
+      ?? discR?.data
+      ?? null
     const treeData = treeR?.data ?? []
     const charData = charR?.data ?? null
 
@@ -80,31 +115,38 @@ export const useStore = create<AppState>()((...a) => ({
         console.error('[onboarding] falhou:', e.message)
       })
 
-      const [cfgRefetch, bancasRefetch, discRefetch] = await Promise.all([
+      const [cfgRefetch, bancasRefetch, discRefetch, discSupaRefetch] = await Promise.all([
         supabase.from('user_config').select('*').eq('user_id', user.id).single(),
         supabase.from('bancas').select('*').eq('user_id', user.id).single(),
         backendApi.get<{ data: Record<string, string[]> }>('/v1/disciplines').catch(() => null),
+        supabase.from('disciplines').select('data').eq('user_id', user.id).single(),
       ])
       cfgData    = cfgRefetch.data
       bancasData = bancasRefetch.data
-      discData   = discRefetch?.data ?? null
+      discData   = (discSupaRefetch.data as { data: Record<string, string[]> } | null)?.data
+                   ?? discRefetch?.data
+                   ?? null
     }
 
     const treeDisc = discFromTree(treeData)
     const hasTree  = Object.keys(treeDisc).length > 0
 
     set({
-      sessions:     sr.data ?? [],
-      sessionStats: ssR.data ?? [],
-      flashcards:   (cr.data ?? []).map(c => ({ ...c, reviews: c.reviews ?? [] })),
+      sessions:        sr.data ?? [],
+      hasMoreSessions: (sr.data?.length ?? 0) >= 500,
+      sessionStats:    ssR.data ?? [],
+      flashcards:      (cr.data ?? []).map(c => ({ ...c, reviews: c.reviews ?? [] })),
+      conceitos:       (concR.data ?? []).map(c => ({ ...c, reviews: c.reviews ?? [] })),
       config:       cfgData    ?? { ...DEFAULT_CONFIG, user_id: user.id },
       bancas:       bancasData?.data ?? DEFAULT_BANCAS,
       skillTree:    treeData,
       character:    charData,
+      purgeRecords: purgeR.data ?? [],
+      questoes:     questR.data ?? [],
       disc:         hasTree
                       ? treeDisc
                       : (discData && Object.keys(discData).length > 0)
-                        ? discData
+                        ? canonicalizeDiscKeys(discData, DEFAULT_DISC)
                         : DEFAULT_DISC,
       loading: false,
       loaded:  true,
@@ -116,7 +158,7 @@ export const useStore = create<AppState>()((...a) => ({
       if (get().sessions.find(s => s.id === session.id)) return
       const stat: SessionStat = {
         id: session.id, date: session.date, total: session.total,
-        correct: session.correct, disc: session.disc, mat: session.mat,
+        correct: session.correct, disc: session.disc, mat: session.mat, tema: session.tema,
       }
       set(s => ({ sessions: [session, ...s.sessions], sessionStats: [stat, ...s.sessionStats] }))
       const icon = session.correct > 0 ? '✅' : '❌'

@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
 import { useStore } from '@/store'
+import { localDate } from '@/lib/utils'
 import type { SessionStat } from '@/types'
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10)
+  return localDate()
 }
 
 function calcStreak(stats: SessionStat[]) {
@@ -11,7 +12,7 @@ function calcStreak(stats: SessionStat[]) {
   let streak = 0
   const d = new Date()
   while (true) {
-    const key = d.toISOString().slice(0, 10)
+    const key = localDate(d)
     if (!days.has(key)) break
     streak++
     d.setDate(d.getDate() - 1)
@@ -61,13 +62,13 @@ export function useStats() {
     const weekStart    = new Date()
     weekStart.setDate(weekStart.getDate() - 6)
     const weekTotal    = sessionStats
-      .filter(s => s.date >= weekStart.toISOString().slice(0, 10))
+      .filter(s => s.date >= localDate(weekStart))
       .reduce((s, r) => s + r.total, 0)
 
     const monthStart   = new Date()
     monthStart.setDate(1)
     const monthTotal   = sessionStats
-      .filter(s => s.date >= monthStart.toISOString().slice(0, 10))
+      .filter(s => s.date >= localDate(monthStart))
       .reduce((s, r) => s + r.total, 0)
 
     const streak     = calcStreak(sessionStats)

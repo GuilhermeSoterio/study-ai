@@ -200,21 +200,27 @@ function CardItem({
     setEditing(false)
   }
 
+  const ignored = Boolean(card.ignored)
+
   return (
     <div className={`border rounded-card overflow-hidden transition-all ${
-      orphan
-        ? 'border-warning/50 bg-warning/5'
-        : expanded
-          ? 'border-primary/40 bg-surface2'
-          : 'border-border bg-surface'
+      ignored
+        ? 'border-border/40 bg-surface opacity-50'
+        : orphan
+          ? 'border-warning/50 bg-warning/5'
+          : expanded
+            ? 'border-primary/40 bg-surface2'
+            : 'border-border bg-surface'
     }`}>
       <div
         className="flex items-start gap-3 p-3.5 cursor-pointer hover:bg-surface2/70 transition-colors"
         onClick={() => { setExpanded(e => !e); setEditing(false) }}
       >
-        <span className="text-lg shrink-0">{due ? '🔔' : '✅'}</span>
+        <span className="text-lg shrink-0">{ignored ? '🚫' : due ? '🔔' : '✅'}</span>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] text-text font-medium leading-snug line-clamp-2">{card.q}</div>
+          <div className={`text-[13px] font-medium leading-snug line-clamp-2 ${ignored ? 'line-through text-muted' : 'text-text'}`}>
+            {card.q}
+          </div>
           <div className="flex gap-2 mt-1.5 flex-wrap items-center">
             <span className={`text-[10px] px-2 py-0.5 rounded-full ${orphan ? 'bg-warning/20 text-warning font-bold' : 'bg-surface3 text-muted'}`}>
               {card.disc}
@@ -222,15 +228,20 @@ function CardItem({
             <span className={`text-[10px] px-2 py-0.5 rounded-full ${orphan ? 'bg-warning/20 text-warning font-bold' : 'bg-surface3 text-muted'}`}>
               {card.mat}
             </span>
-            {orphan && (
+            {ignored && (
+              <span className="text-[10px] font-bold text-muted">ignorado</span>
+            )}
+            {!ignored && orphan && (
               <span className="text-[10px] font-bold text-warning">⚠️ categoria inválida</span>
             )}
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${accBadge}`}>
-            {accPct === null ? 'Nova' : `${accPct}%`}
-          </span>
+          {!ignored && (
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${accBadge}`}>
+              {accPct === null ? 'Nova' : `${accPct}%`}
+            </span>
+          )}
           <span className="text-muted text-xs">{reviews.length}rev</span>
           <span className="text-dim text-xs">{expanded ? '▲' : '▼'}</span>
         </div>
@@ -305,13 +316,25 @@ function CardItem({
           {/* Ações */}
           {!editing && (
             <div className="flex gap-2 pt-1 flex-wrap">
+              {!ignored && (
+                <button
+                  onClick={e => { e.stopPropagation(); setEditing(true) }}
+                  className="text-[12px] text-primary border border-primary/30 px-3 py-1.5 rounded-sm hover:bg-primary/10 transition-all"
+                >
+                  ✏️ Editar categoria
+                </button>
+              )}
               <button
-                onClick={e => { e.stopPropagation(); setEditing(true) }}
-                className="text-[12px] text-primary border border-primary/30 px-3 py-1.5 rounded-sm hover:bg-primary/10 transition-all"
+                onClick={e => { e.stopPropagation(); updateFlashcard(card.id, { ignored: !ignored }) }}
+                className={`text-[12px] px-3 py-1.5 rounded-sm border transition-all ${
+                  ignored
+                    ? 'text-success border-success/30 hover:bg-success/10'
+                    : 'text-muted border-border hover:text-warning hover:border-warning/40'
+                }`}
               >
-                ✏️ Editar categoria
+                {ignored ? '↩ Restaurar' : '🚫 Ignorar'}
               </button>
-              {!confirming ? (
+              {!ignored && (!confirming ? (
                 <button
                   onClick={() => setConfirming(true)}
                   className="text-[12px] text-danger border border-danger/30 px-3 py-1.5 rounded-sm hover:bg-danger/10 transition-all"
@@ -334,7 +357,7 @@ function CardItem({
                     Não
                   </button>
                 </div>
-              )}
+              ))}
             </div>
           )}
         </div>

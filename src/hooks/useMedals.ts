@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useStore } from '@/store'
+import { localDate } from '@/lib/utils'
 
 // ── Medal tiers ───────────────────────────────────────────────────────────────
 
@@ -114,7 +115,7 @@ export function calcEliteStreak(days: EliteDay[]): number {
   let streak = 0
   const d    = new Date()
   while (true) {
-    const key = d.toISOString().slice(0, 10)
+    const key = localDate(d)
     if (!set.has(key)) break
     streak++
     d.setDate(d.getDate() - 1)

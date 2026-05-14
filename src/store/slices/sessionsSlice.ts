@@ -5,27 +5,42 @@ import type { AppState } from '../types'
 import { toast } from '../toastStore'
 
 export type SessionsSlice = Pick<AppState,
-  'sessions' | 'sessionStats' | 'addSession' | 'updateSession' | 'removeSession'
+  'sessions' | 'sessionStats' | 'hasMoreSessions' |
+  'addSession' | 'updateSession' | 'removeSession' | 'refreshSinceTs' | 'loadMoreSessions'
 >
 
+const PAGE = 500
+
 export const createSessionsSlice: StateCreator<AppState, [], [], SessionsSlice> = (set, get) => ({
-  sessions:     [],
-  sessionStats: [],
+  sessions:        [],
+  sessionStats:    [],
+  hasMoreSessions: false,
 
   addSession: (session: Session) => {
-    const stat = { id: session.id, date: session.date, total: session.total,
-                   correct: session.correct, disc: session.disc, mat: session.mat }
+    // Canonicaliza disc/mat para evitar duplicatas por capitalização
+    const discMap = get().disc
+    const discKey = Object.keys(discMap).find(
+      k => k.toLowerCase().trim() === session.disc.toLowerCase().trim()
+    ) ?? session.disc
+    const mats = discMap[discKey] ?? []
+    const matKey = mats.find(
+      m => m.toLowerCase().trim() === session.mat.toLowerCase().trim()
+    ) ?? session.mat
+    const canonSession = { ...session, disc: discKey, mat: matKey }
+
+    const stat = { id: canonSession.id, date: canonSession.date, total: canonSession.total,
+                   correct: canonSession.correct, disc: canonSession.disc, mat: canonSession.mat, tema: canonSession.tema }
     set(s => ({
-      sessions:     [session, ...s.sessions],
+      sessions:     [canonSession, ...s.sessions],
       sessionStats: [stat, ...s.sessionStats],
     }))
     const { userId } = get()
     if (userId) {
-      supabase.from('sessions').insert({ ...session, user_id: userId }).then(({ error }) => {
+      supabase.from('sessions').insert({ ...canonSession, user_id: userId }).then(({ error }) => {
         if (error) {
           set(s => ({
-            sessions:     s.sessions.filter(x => x.id !== session.id),
-            sessionStats: s.sessionStats.filter(x => x.id !== session.id),
+            sessions:     s.sessions.filter(x => x.id !== canonSession.id),
+            sessionStats: s.sessionStats.filter(x => x.id !== canonSession.id),
           }))
           toast.error('Erro ao registrar sessão. Verifique sua conexão.')
         }
@@ -48,6 +63,29 @@ export const createSessionsSlice: StateCreator<AppState, [], [], SessionsSlice> 
     })
   },
 
+  refreshSinceTs: async (since: number) => {
+    const { userId } = get()
+    if (!userId) return
+    const { data } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .gt('ts', since)
+      .order('ts', { ascending: false })
+    if (!data?.length) return
+    const existing = new Set(get().sessions.map(s => s.id))
+    const news = data.filter((s: Session) => !existing.has(s.id))
+    if (!news.length) return
+    const newStats = news.map((s: Session) => ({
+      id: s.id, date: s.date, total: s.total,
+      correct: s.correct, disc: s.disc, mat: s.mat, tema: s.tema,
+    }))
+    set(s => ({
+      sessions:     [...news, ...s.sessions],
+      sessionStats: [...newStats, ...s.sessionStats],
+    }))
+  },
+
   removeSession: (id: string) => {
     const prev     = get().sessions
     const prevStat = get().sessionStats
@@ -61,5 +99,30 @@ export const createSessionsSlice: StateCreator<AppState, [], [], SessionsSlice> 
         toast.error('Erro ao remover sessão.')
       }
     })
+  },
+
+  loadMoreSessions: async () => {
+    const { userId, sessions } = get()
+    if (!userId || !sessions.length) return
+    const oldestTs = Math.min(...sessions.map(s => s.ts))
+    const { data } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .lt('ts', oldestTs)
+      .order('ts', { ascending: false })
+      .limit(PAGE)
+    if (!data?.length) { set({ hasMoreSessions: false }); return }
+    const existing = new Set(sessions.map(s => s.id))
+    const fresh = (data as Session[]).filter(s => !existing.has(s.id))
+    const freshStats = fresh.map(s => ({
+      id: s.id, date: s.date, total: s.total,
+      correct: s.correct, disc: s.disc, mat: s.mat, tema: s.tema,
+    }))
+    set(s => ({
+      sessions:        [...s.sessions, ...fresh],
+      sessionStats:    [...s.sessionStats, ...freshStats],
+      hasMoreSessions: data.length >= PAGE,
+    }))
   },
 })

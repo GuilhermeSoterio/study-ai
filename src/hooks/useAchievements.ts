@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useStore } from '@/store'
 import { useEliteDays } from './useMedals'
+import { localDate } from '@/lib/utils'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -171,7 +172,7 @@ function computeStreak(dates: Set<string>): { current: number; best: number } {
 
   let current = 0
   const d = new Date()
-  while (dates.has(d.toISOString().slice(0, 10))) {
+  while (dates.has(localDate(d))) {
     current++
     d.setDate(d.getDate() - 1)
   }

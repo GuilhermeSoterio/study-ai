@@ -31,13 +31,19 @@ export const createConfigSlice: StateCreator<AppState, [], [], ConfigSlice> = (s
   },
 
   saveDisc: async (newDisc: Record<string, string[]>) => {
+    const { userId } = get()
     const prev = get().disc
     set({ disc: newDisc })
-    try {
-      await backendApi.put('/v1/disciplines', { disciplines: newDisc })
-    } catch {
+    if (!userId) return
+    const { error } = await supabase
+      .from('disciplines')
+      .upsert({ user_id: userId, data: newDisc })
+    if (error) {
       set({ disc: prev })
       toast.error('Erro ao salvar disciplinas.')
+      return
     }
+    // keep backend in sync, but don't block or revert on failure
+    backendApi.put('/v1/disciplines', { disciplines: newDisc }).catch(() => {})
   },
 })

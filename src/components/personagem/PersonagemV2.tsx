@@ -1,7 +1,27 @@
+import { useMemo } from 'react'
 import { useStore } from '@/store'
 import { FamilyTree } from './FamilyTree'
 import type { TNode } from './types'
 import type { CharacterData, SessionStat } from '@/types'
+
+function slug(s: string) {
+  return s.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+}
+
+function discToForest(disc: Record<string, string[]>): TNode[] {
+  return Object.entries(disc).map(([discName, mats]) => ({
+    id: `disc-${slug(discName)}`,
+    label: discName,
+    disc: discName,
+    icon: '📚',
+    children: mats.map(mat => ({
+      id: `mat-${slug(discName)}-${slug(mat)}`,
+      label: mat,
+      disc: discName,
+      mat,
+    })),
+  }))
+}
 
 // XP mínimo por nível — espelha o backend
 const LEVEL_MIN: Record<number, number> = {
@@ -125,9 +145,11 @@ function SkillTreeV2({ roots, sessions }: { roots: TNode[]; sessions: SessionSta
 export function PersonagemV2() {
   // Fix #1 — lê do store, sem fetch local. Dados carregados uma vez no loadAll.
   const char     = useStore(s => s.character)
-  const roots    = useStore(s => s.skillTree)
+  const disc     = useStore(s => s.disc)
   const sessions = useStore(s => s.sessionStats)
   const loading  = useStore(s => s.loading)
+
+  const roots = useMemo(() => discToForest(disc), [disc])
 
   if (loading) {
     return (

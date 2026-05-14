@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { useStore } from '@/store'
+import { localDate } from '@/lib/utils'
 import type { Session } from '@/types'
+import { HistoricoQuestoes } from './HistoricoQuestoes'
 
-type Filter = 'todas' | 'qconcursos' | 'manual'
+type Filter = 'todas' | 'qconcursos' | 'manual' | 'invalidas'
+type SubTab = 'sessoes' | 'questoes'
 
 // ── Source badge ──────────────────────────────────────────────────────────────
 
@@ -23,6 +26,7 @@ interface EditForm {
   banca:   string
   correct: string
   total:   string
+  tema:    string
 }
 
 function EditModal({
@@ -32,8 +36,12 @@ function EditModal({
 }: {
   session: Session
   onClose: () => void
-  onSave:  (updates: Partial<Pick<Session, 'correct' | 'total' | 'disc' | 'mat' | 'banca' | 'date'>>) => void
+  onSave:  (updates: Partial<Pick<Session, 'correct' | 'total' | 'disc' | 'mat' | 'banca' | 'date' | 'tema' | 'error_type'>>) => void
 }) {
+  const sessions      = useStore(s => s.sessions)
+  const discMap       = useStore(s => s.disc)
+  const existingTemas = [...new Set(sessions.map(s => s.tema).filter((t): t is string => Boolean(t)))].sort()
+
   const [form, setForm] = useState<EditForm>({
     date:    session.date,
     disc:    session.disc,
@@ -41,16 +49,19 @@ function EditModal({
     banca:   session.banca,
     correct: String(session.correct),
     total:   String(session.total),
+    tema:    session.tema ?? '',
   })
 
+  const mats = form.disc ? (discMap[form.disc] ?? []) : []
+
   function set(k: keyof EditForm, v: string) {
-    setForm(prev => ({ ...prev, [k]: v }))
+    setForm(prev => ({ ...prev, [k]: v, ...(k === 'disc' ? { mat: '' } : {}) }))
   }
 
-  const correct = parseInt(form.correct) || 0
-  const total   = parseInt(form.total)   || 0
-  const valid   = total > 0 && correct >= 0 && correct <= total && form.disc.trim() && form.mat.trim()
-  const acc     = total > 0 ? Math.round((correct / total) * 100) : 0
+  const correct  = parseInt(form.correct) || 0
+  const total    = parseInt(form.total)   || 0
+  const valid    = total > 0 && correct >= 0 && correct <= total && form.disc.trim() && form.mat.trim()
+  const acc      = total > 0 ? Math.round((correct / total) * 100) : 0
   const accColor = acc >= 75 ? '#4a7c59' : acc >= 50 ? '#d4a017' : '#c0392b'
 
   function submit(e: React.FormEvent) {
@@ -63,6 +74,7 @@ function EditModal({
       banca:   form.banca.trim(),
       correct,
       total,
+      tema:    form.tema.trim() || null,
     })
     onClose()
   }
@@ -77,7 +89,6 @@ function EditModal({
         className="bg-surface rounded-card shadow-xl border border-border w-full max-w-md"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div>
             <div className="text-[14px] font-black text-text">✎ Editar Sessão</div>
@@ -87,14 +98,11 @@ function EditModal({
         </div>
 
         <form onSubmit={submit} className="px-5 py-4 space-y-4">
-          {/* Acertos + Total — campos mais importantes, em destaque */}
           <div
             className="rounded-card p-4 space-y-3"
             style={{ background: 'rgba(74,124,89,0.06)', border: '1.5px solid rgba(74,124,89,0.25)' }}
           >
-            <div className="text-[10px] font-black tracking-wider text-primary uppercase">
-              Resultado da sessão
-            </div>
+            <div className="text-[10px] font-black tracking-wider text-primary uppercase">Resultado da sessão</div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Acertos</label>
@@ -128,7 +136,6 @@ function EditModal({
             )}
           </div>
 
-          {/* Outros campos */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Data</label>
@@ -151,20 +158,43 @@ function EditModal({
 
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Disciplina</label>
-            <input
+            <select
               value={form.disc}
               onChange={e => set('disc', e.target.value)}
               className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-[12px] text-text outline-none focus:border-primary"
-            />
+            >
+              <option value="">Selecione...</option>
+              {Object.keys(discMap).map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
           </div>
 
           <div className="space-y-1">
             <label className="text-[10px] font-bold text-muted uppercase tracking-wider">Matéria</label>
-            <input
+            <select
               value={form.mat}
               onChange={e => set('mat', e.target.value)}
+              disabled={!form.disc}
+              className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-[12px] text-text outline-none focus:border-primary disabled:opacity-40"
+            >
+              <option value="">Selecione...</option>
+              {mats.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-muted uppercase tracking-wider">
+              Temática <span className="normal-case font-normal opacity-60">(opcional)</span>
+            </label>
+            <input
+              list="edit-temas-list"
+              value={form.tema}
+              onChange={e => set('tema', e.target.value)}
+              placeholder="Ex: equivalência, negação…"
               className="w-full bg-surface2 border border-border rounded-sm px-3 py-2 text-[12px] text-text outline-none focus:border-primary"
             />
+            <datalist id="edit-temas-list">
+              {existingTemas.map(t => <option key={t} value={t} />)}
+            </datalist>
           </div>
 
           <div className="flex items-center justify-between gap-3 pt-1">
@@ -253,14 +283,21 @@ function SessionRow({
   onEdit:   () => void
   onDelete: () => void
 }) {
-  const acc = s.total > 0 ? Math.round((s.correct / s.total) * 100) : 0
+  const acc      = s.total > 0 ? Math.round((s.correct / s.total) * 100) : 0
   const accColor = acc >= 75 ? 'text-success' : acc >= 50 ? 'text-warning' : 'text-danger'
 
   return (
     <div className="group grid grid-cols-[90px_1fr_1fr_60px_50px_56px_56px] gap-2 items-center px-3 py-2 border-b border-border/50 hover:bg-surface2/60 transition-colors text-[12px]">
       <span className="text-muted font-mono">{s.date}</span>
       <span className="text-text font-medium truncate">{s.disc}</span>
-      <span className="text-muted truncate">{s.mat}</span>
+      <span className="truncate">
+        <span className="text-muted">{s.mat}</span>
+        {s.tema && (
+          <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/25">
+            {s.tema}
+          </span>
+        )}
+      </span>
       <span className="text-muted text-center truncate">{s.banca}</span>
       <span className={`font-bold text-center tabular-nums ${accColor}`}>
         {s.correct}/{s.total}
@@ -268,7 +305,6 @@ function SessionRow({
       <div className="flex justify-center">
         <SourceBadge source={s.source} />
       </div>
-      {/* Actions — always visible on mobile, hover on desktop */}
       <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           onClick={onEdit}
@@ -289,15 +325,21 @@ function SessionRow({
   )
 }
 
-// ── Root ──────────────────────────────────────────────────────────────────────
+// ── Sessões subtab ────────────────────────────────────────────────────────────
 
-export function Historico() {
-  const sessions       = useStore(s => s.sessions)
-  const updateSession  = useStore(s => s.updateSession)
-  const removeSession  = useStore(s => s.removeSession)
+const PAGE_SIZE = 50
+
+function HistoricoSessoes() {
+  const sessions         = useStore(s => s.sessions)
+  const hasMore          = useStore(s => s.hasMoreSessions)
+  const updateSession    = useStore(s => s.updateSession)
+  const removeSession    = useStore(s => s.removeSession)
+  const loadMoreSessions = useStore(s => s.loadMoreSessions)
 
   const [filter,    setFilter]    = useState<Filter>('todas')
   const [search,    setSearch]    = useState('')
+  const [page,      setPage]      = useState(0)
+  const [loading,   setLoading]   = useState(false)
   const [editing,   setEditing]   = useState<Session | null>(null)
   const [deleting,  setDeleting]  = useState<Session | null>(null)
 
@@ -310,20 +352,37 @@ export function Historico() {
     .filter(s => {
       if (!search) return true
       const q = search.toLowerCase()
-      return s.disc.toLowerCase().includes(q) || s.mat.toLowerCase().includes(q) || s.banca.toLowerCase().includes(q)
+      return s.disc.toLowerCase().includes(q)
+        || s.mat.toLowerCase().includes(q)
+        || s.banca.toLowerCase().includes(q)
+        || (s.tema ?? '').toLowerCase().includes(q)
     })
 
+  const totalPages  = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages - 1)
+  const pageItems   = filtered.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE)
+  const isLastPage  = currentPage >= totalPages - 1
+
+  // Volta para a primeira página ao mudar filtro/busca
+  const handleFilter = (f: Filter) => { setFilter(f); setPage(0) }
+  const handleSearch = (v: string) => { setSearch(v);  setPage(0) }
+
+  async function handleLoadMore() {
+    setLoading(true)
+    await loadMoreSessions()
+    setLoading(false)
+  }
+
   const qcCount    = sessions.filter(s => s.source === 'QConcursos').length
-  const totalToday = sessions.filter(s => s.date === new Date().toISOString().slice(0, 10)).length
+  const totalToday = sessions.filter(s => s.date === localDate()).length
 
   return (
     <>
       <div className="space-y-3">
-        {/* Resumo rápido */}
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-surface border border-border rounded-card px-4 py-3 text-center">
             <div className="text-xl font-black text-text">{sessions.length}</div>
-            <div className="text-[11px] text-muted mt-0.5">Sessões total</div>
+            <div className="text-[11px] text-muted mt-0.5">Sessões carregadas</div>
           </div>
           <div className="bg-surface border border-border rounded-card px-4 py-3 text-center">
             <div className="text-xl font-black text-accent">{qcCount}</div>
@@ -335,12 +394,11 @@ export function Historico() {
           </div>
         </div>
 
-        {/* Filtros + busca */}
         <div className="flex gap-2 flex-wrap items-center">
           {(['todas', 'qconcursos', 'manual'] as Filter[]).map(f => (
             <button
               key={f}
-              onClick={() => setFilter(f)}
+              onClick={() => handleFilter(f)}
               className={`text-[11px] font-bold px-3 py-1.5 rounded-full border transition-colors capitalize ${
                 filter === f
                   ? 'bg-primary text-white border-primary'
@@ -352,13 +410,12 @@ export function Historico() {
           ))}
           <input
             value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar disciplina, matéria…"
+            onChange={e => handleSearch(e.target.value)}
+            placeholder="Buscar disciplina, matéria, tema…"
             className="ml-auto text-[12px] bg-surface border border-border rounded-lg px-3 py-1.5 text-text placeholder:text-muted outline-none focus:border-primary w-52"
           />
         </div>
 
-        {/* Tabela */}
         <div className="bg-surface border border-border rounded-card overflow-hidden">
           <div className="grid grid-cols-[90px_1fr_1fr_60px_50px_56px_56px] gap-2 px-3 py-2 bg-surface2 border-b border-border text-[10px] font-bold text-muted uppercase tracking-wider">
             <span>Data</span>
@@ -377,27 +434,62 @@ export function Historico() {
                 : 'Nenhuma sessão encontrada com esse filtro.'}
             </div>
           ) : (
-            <div className="overflow-y-auto" style={{ maxHeight: 480 }}>
-              {filtered.map(s => (
-                <SessionRow
-                  key={s.id}
-                  s={s}
-                  onEdit={()   => setEditing(s)}
-                  onDelete={() => setDeleting(s)}
-                />
-              ))}
-            </div>
+            pageItems.map(s => (
+              <SessionRow
+                key={s.id}
+                s={s}
+                onEdit={()   => setEditing(s)}
+                onDelete={() => setDeleting(s)}
+              />
+            ))
           )}
         </div>
 
+        {/* Paginação */}
+        {filtered.length > 0 && (
+          <div className="flex items-center justify-between gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={currentPage === 0}
+              className="px-3 py-1.5 text-[11px] font-bold rounded border border-border text-muted hover:text-text hover:bg-surface2 disabled:opacity-30 transition-colors"
+            >
+              ← Anterior
+            </button>
+
+            <span className="text-[11px] text-muted">
+              Página <span className="text-text font-bold">{currentPage + 1}</span> de{' '}
+              <span className="text-text font-bold">{totalPages}</span>
+              {' '}·{' '}
+              <span className="text-muted">{filtered.length} sessão(ões)</span>
+            </span>
+
+            {isLastPage && hasMore ? (
+              <button
+                onClick={handleLoadMore}
+                disabled={loading}
+                className="px-3 py-1.5 text-[11px] font-bold rounded border border-primary/50 text-primary hover:bg-primary/10 disabled:opacity-50 transition-colors"
+              >
+                {loading ? 'Carregando…' : 'Carregar mais ↓'}
+              </button>
+            ) : (
+              <button
+                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={currentPage >= totalPages - 1}
+                className="px-3 py-1.5 text-[11px] font-bold rounded border border-border text-muted hover:text-text hover:bg-surface2 disabled:opacity-30 transition-colors"
+              >
+                Próxima →
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="text-[11px] text-muted text-center">
-          {filtered.length} sessão(ões) · <span className="text-accent font-bold">QC</span> = QConcursos ·{' '}
+          <span className="text-accent font-bold">QC</span> = QConcursos ·{' '}
           <span className="text-warning font-bold">FC</span> = Flashcard ·{' '}
-          <span className="text-muted">passe o mouse sobre uma linha para editar ou remover</span>
+          passe o mouse sobre uma linha para editar ou remover
         </div>
       </div>
 
-      {/* Modals */}
       {editing && (
         <EditModal
           session={editing}
@@ -413,5 +505,37 @@ export function Historico() {
         />
       )}
     </>
+  )
+}
+
+// ── Root ──────────────────────────────────────────────────────────────────────
+
+export function Historico() {
+  const [subTab, setSubTab] = useState<SubTab>('sessoes')
+
+  return (
+    <div className="space-y-3">
+      {/* SubTabs */}
+      <div className="flex gap-1 bg-surface2 rounded-card p-1 w-fit">
+        {([
+          { value: 'sessoes',  label: 'Sessões' },
+          { value: 'questoes', label: 'Questões' },
+        ] as { value: SubTab; label: string }[]).map(t => (
+          <button
+            key={t.value}
+            onClick={() => setSubTab(t.value)}
+            className={`px-4 py-1.5 rounded text-[12px] font-bold transition-colors ${
+              subTab === t.value
+                ? 'bg-surface text-text shadow-sm'
+                : 'text-muted hover:text-text'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {subTab === 'sessoes' ? <HistoricoSessoes /> : <HistoricoQuestoes />}
+    </div>
   )
 }

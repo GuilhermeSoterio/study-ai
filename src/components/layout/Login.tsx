@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useStore } from '@/store'
+import logo from '@/assets/logo.png'
 
 export function Login() {
   const signIn = useStore(s => s.signIn)
-  const loadAll = useStore(s => s.loadAll)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -17,17 +17,28 @@ export function Login() {
     if (err) {
       setError(err)
       setLoading(false)
-    } else {
-      await loadAll()
     }
+    // loadAll é chamado automaticamente pelo onAuthStateChange em App.tsx
+    // quando o evento SIGNED_IN dispara — não precisa chamar aqui
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg">
       <div className="bg-surface border border-border rounded-card p-8 w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <div className="gradient-text text-3xl font-black mb-1">StudyBI</div>
-          <div className="text-muted text-sm">Tribunais TI</div>
+        <div className="text-center flex flex-col items-center gap-3">
+          <img
+            src={logo}
+            alt="New Age"
+            style={{
+              width: 80,
+              height: 'auto',
+              animation: 'logo-float 3.2s ease-in-out infinite, logo-glow 3.2s ease-in-out infinite',
+            }}
+          />
+          <div>
+            <div className="gradient-text text-3xl font-black mb-0.5">New Age</div>
+            <div className="text-muted text-sm">Tribunais TI</div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

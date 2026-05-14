@@ -49,6 +49,35 @@ function getUserIdFromToken(token) {
   }
 }
 
+async function logQuestao(data, config) {
+  const now = new Date();
+  const date = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const body = {
+    id:         `qc_q_${data.questionId}_${Date.now()}`,
+    user_id:    getUserIdFromToken(config.accessToken),
+    ts:         Date.now(),
+    date,
+    disc:       config.disc || data.disc,
+    mat:        config.mat  || data.mat,
+    banca:      data.banca  || 'Não informada',
+    enunciado:  data.questionText || null,
+    correto:    Boolean(data.correct),
+    error_type: data.errorType || null,
+    tema:       data.tema || null,
+  };
+  // Fire-and-forget — não bloqueia o fluxo principal
+  fetch(`${config.supabaseUrl}/rest/v1/questoes`, {
+    method: 'POST',
+    headers: {
+      'apikey': config.anonKey,
+      'Authorization': `Bearer ${config.accessToken}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(body)
+  }).catch(() => {});
+}
+
 async function logQuestion(data) {
   const config = await getConfig();
   if (!config.accessToken || !config.supabaseUrl) {
@@ -57,7 +86,7 @@ async function logQuestion(data) {
   }
 
   const now = new Date();
-  const date = now.toISOString().slice(0, 10);
+  const date = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   const id = `qc_${data.questionId}_${Date.now()}`;
 
   const body = {
@@ -73,6 +102,7 @@ async function logQuestion(data) {
     source: 'QConcursos'
   };
   if (data.errorType) body.error_type = data.errorType;
+  if (data.tema)      body.tema       = data.tema;
 
   const res = await fetch(`${config.supabaseUrl}/rest/v1/sessions`, {
     method: 'POST',
@@ -90,9 +120,10 @@ async function logQuestion(data) {
     logged.add(data.questionId);
     persistLogged();
     updateSessionStats(data.correct);
+    logQuestao(data, config);
 
     chrome.storage.local.get(['todayDate', 'todayCount'], d => {
-      const today = new Date().toISOString().slice(0, 10);
+      const _t = new Date(); const today = `${_t.getFullYear()}-${String(_t.getMonth()+1).padStart(2,'0')}-${String(_t.getDate()).padStart(2,'0')}`;
       const count = d.todayDate === today ? (d.todayCount || 0) + 1 : 1;
       chrome.storage.local.set({ todayDate: today, todayCount: count });
     });
@@ -136,6 +167,7 @@ async function logFlashcard(data, config) {
       q: data.questionText,
       a: verso,
       banca: data.banca,
+      correct: Boolean(data.correct),
       reviews: []
     })
   });
@@ -159,6 +191,15 @@ function findQuestionBlock(el) {
   return null;
 }
 
+// ── Normaliza texto extraído do DOM (remove quebras excessivas, espaços redundantes) ──
+function normalizeExtracted(text) {
+  return text
+    .replace(/[ \t]+/g, ' ')        // colapsa espaços/tabs múltiplos em um
+    .replace(/^ /gm, '')             // remove espaço inicial de cada linha
+    .replace(/\n{3,}/g, '\n\n')      // máximo 2 quebras consecutivas
+    .trim();
+}
+
 // ── Extrai o enunciado da questão ──
 function extractQuestionText(block) {
   const selectors = [
@@ -169,16 +210,15 @@ function extractQuestionText(block) {
   for (const sel of selectors) {
     const el = block.querySelector(sel);
     if (el) {
-      const t = el.innerText.trim();
+      const t = normalizeExtracted(el.innerText);
       if (t.length > 20) return t;
     }
   }
 
   const fullText = block.innerText || '';
 
-  // Encontra início das alternativas
-  // Para antes do resultado (Responder, Você errou, Resolvi certo, etc.)
-  const stopIdx = fullText.search(/\n[Rr]esponder\b|\n[Vv]ocê (errou|acertou)|\n[Rr]esolvi (certo|errado)|\n[Ff]icou com dúvidas/);
+  // Para antes do resultado (Responder, Você errou, Parabéns, etc.)
+  const stopIdx = fullText.search(/\n[Rr]esponder\b|\n[Vv]ocê (errou|acertou)|\n[Rr]esolvi (certo|errado)|\n[Ff]icou com dúvidas|\n[Pp]arab[eé]ns|\n[Cc]ompare seu desempenho|\n[Aa]prenda mais/);
   const cleanText = stopIdx > 0 ? fullText.slice(0, stopIdx) : fullText;
 
   const altIdx = cleanText.search(/\n[Aa]lternativas\n/);
@@ -197,19 +237,20 @@ function extractQuestionText(block) {
     const isQuestion   = l.length > 60 || /[.!?"]/.test(l);
     if (!isBreadcrumb && isQuestion) { start = i; break; }
   }
-  const enunciado = lines.slice(start).join('\n').trim();
+  const enunciado = normalizeExtracted(lines.slice(start).join('\n'));
   if (!enunciado) return '';
 
   // Extrai alternativas (entre "Alternativas" e "Responder"/"Você errou"/"Você acertou")
   const afterAlts = altIdx > 0 ? fullText.slice(altIdx) : '';
-  const stopMatch = afterAlts.search(/\n[Rr]esponder\b|\n[Vv]ocê (errou|acertou)|\n[Ff]icou com dúvidas/);
+  const stopMatch = afterAlts.search(/\n[Rr]esponder\b|\n[Vv]ocê (errou|acertou)|\n[Ff]icou com dúvidas|\n[Pp]arab[eé]ns|\n[Cc]ompare seu desempenho|\n[Aa]prenda mais/);
   const altsBlock = stopMatch > 0 ? afterAlts.slice(0, stopMatch) : afterAlts;
 
   // Formata alternativas: converte "\nA\ntexto\n" → "A) texto"
-  const altsText = altsBlock
-    .replace(/\n([A-E])\n([^\n]+)/g, '\n\n$1) $2')
-    .replace(/\n[Aa]lternativas\n?/, '')
-    .trim();
+  const altsText = normalizeExtracted(
+    altsBlock
+      .replace(/\n([A-E])\n([^\n]+)/g, '\n\n$1) $2')
+      .replace(/\n[Aa]lternativas\n?/, '')
+  );
 
   return altsText ? `${enunciado}\n\n${altsText}` : enunciado;
 }
@@ -218,37 +259,33 @@ function extractQuestionText(block) {
 function extractCorrectAnswer(block, selectedLetter) {
   const text = block.innerText || '';
 
-  // Se o usuário acertou e sabemos qual letra ele selecionou
-  if (selectedLetter && /^[A-E]$/.test(selectedLetter)) {
-    const optNewline = text.match(new RegExp(`\\n${selectedLetter}\\n([^\\n]{5,})`));
-    if (optNewline) return `${selectedLetter}) ${optNewline[1].trim()}`;
-    const optParen = text.match(new RegExp(`${selectedLetter}\\)\\s*([^\\n]{5,})`));
-    if (optParen) return `${selectedLetter}) ${optParen[1].trim()}`;
+  // Helper: dado uma letra, tenta extrair o texto completo da alternativa
+  function findAnswerText(letter) {
+    if (!letter || !/^[A-E]$/.test(letter)) return null;
+    const optNewline = text.match(new RegExp(`\\n${letter}\\n([^\\n]{5,})`));
+    if (optNewline) return `${letter}) ${optNewline[1].trim()}`;
+    const optParen = text.match(new RegExp(`${letter}\\)\\s*([^\\n]{5,})`));
+    if (optParen) return `${letter}) ${optParen[1].trim()}`;
+    return null;
   }
+
+  // Se o usuário acertou e sabemos qual letra ele selecionou
+  const fromSelected = findAnswerText(selectedLetter);
+  if (fromSelected) return fromSelected;
 
   // "Você errou! Resposta: B" ou "Resposta: B"
   const respostaMatch = text.match(/[Rr]esposta:\s*([A-E])\b/);
   if (respostaMatch) {
-    const letter = respostaMatch[1];
-    // Formato "A\n[texto]" (QConcursos)
-    const optNewline = text.match(new RegExp(`\\n${letter}\\n([^\\n]{5,})`));
-    if (optNewline) return `${letter}) ${optNewline[1].trim()}`;
-    // Formato "A) texto"
-    const optParen = text.match(new RegExp(`${letter}\\)\\s*([^\\n]{5,})`));
-    return optParen ? `${letter}) ${optParen[1].trim()}` : `Gabarito: ${letter}`;
+    return findAnswerText(respostaMatch[1]) || `Gabarito: ${respostaMatch[1]}`;
   }
 
   // "Gabarito: X"
   const gabMatch = text.match(/[Gg]abarito[^:]*:\s*([A-E])\b/);
   if (gabMatch) {
-    const letter = gabMatch[1];
-    const optNewline = text.match(new RegExp(`\\n${letter}\\n([^\\n]{5,})`));
-    if (optNewline) return `${letter}) ${optNewline[1].trim()}`;
-    const optParen = text.match(new RegExp(`${letter}\\)\\s*([^\\n]{5,})`));
-    return optParen ? `${letter}) ${optParen[1].trim()}` : `Gabarito: ${letter}`;
+    return findAnswerText(gabMatch[1]) || `Gabarito: ${gabMatch[1]}`;
   }
 
-  // Elemento com classe de correto
+  // Elemento com classe de correto — ignora elementos de parabéns/feedback
   const correctSelectors = [
     '[class*="correct"]:not([class*="incorrect"])',
     '[class*="gabarito"]', '[class*="right-answer"]',
@@ -258,8 +295,15 @@ function extractCorrectAnswer(block, selectedLetter) {
     const el = block.querySelector(sel);
     if (el) {
       const t = el.innerText.trim();
+      // Pula mensagens de parabéns que podem ter "correct" na classe CSS
+      if (/parab[eé]ns|você acertou|acertou[.!]/i.test(t)) continue;
       if (t.length > 1 && t.length < 400) return t;
     }
+  }
+
+  // Último recurso: se temos a letra, retorna só ela
+  if (selectedLetter && /^[A-E]$/.test(selectedLetter)) {
+    return `Gabarito: ${selectedLetter}`;
   }
 
   return '';
@@ -317,10 +361,11 @@ function parseQuestionBlock(block, selectedLetter) {
 
 // ── Modal "Por que você errou?" ────────────────────────────────────────────────
 const ERROR_TYPES = [
-  { value: 'nao_sabia',  label: 'Não sabia',  desc: 'Conteúdo desconhecido',   color: '#ef4444' },
-  { value: 'distracao',  label: 'Distração',   desc: 'Li errado ou me enganei', color: '#f59e0b' },
-  { value: 'pegadinha',  label: 'Pegadinha',   desc: 'A banca induziu ao erro', color: '#a78bfa' },
-  { value: 'tempo',      label: 'Tempo',       desc: 'Não tive tempo suficiente',color: '#7878a0' },
+  { value: 'nao_sabia',     label: 'Não sabia',     desc: 'Conteúdo desconhecido',         color: '#ef4444' },
+  { value: 'interpretacao', label: 'Interpretação',  desc: 'Sabia, mas não soube resolver', color: '#22d3ee' },
+  { value: 'distracao',     label: 'Distração',     desc: 'Li errado ou me enganei',       color: '#f59e0b' },
+  { value: 'pegadinha',     label: 'Pegadinha',     desc: 'A banca induziu ao erro',       color: '#a78bfa' },
+  { value: 'tempo',         label: 'Tempo',         desc: 'Não tive tempo suficiente',     color: '#7878a0' },
 ];
 
 function showErrorModal(onSelect) {
@@ -351,61 +396,118 @@ function showErrorModal(onSelect) {
         background:rgba(0,0,0,.55);
       }
       .sbi-m-title { font-size:13px; font-weight:800; color:#eeeeff; margin-bottom:4px; }
-      .sbi-m-sub   { font-size:11px; color:#7878a0; margin-bottom:14px; }
-      .sbi-m-grid  { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+      .sbi-m-sub   { font-size:11px; color:#7878a0; margin-bottom:12px; }
+      .sbi-m-grid  { display:grid; grid-template-columns:1fr; gap:6px; margin-bottom:12px; }
       .sbi-m-btn {
         background:#17172a; border:1px solid #28283f; border-radius:8px;
-        padding:10px 8px; cursor:pointer; text-align:left; transition:border-color .15s, background .15s;
+        padding:8px 10px; cursor:pointer; text-align:left;
+        transition:border-color .15s, background .15s;
+        display:flex; align-items:center; gap:8px;
       }
       .sbi-m-btn:hover { background:#1e1e33; }
-      .sbi-m-btn-label { font-size:12px; font-weight:700; color:#eeeeff; display:block; }
-      .sbi-m-btn-desc  { font-size:10px; color:#7878a0; display:block; margin-top:2px; }
+      .sbi-m-btn.sbi-selected { background:#1a1a2e; }
+      .sbi-m-btn-label { font-size:12px; font-weight:700; color:#eeeeff; min-width:90px; }
+      .sbi-m-btn-desc  { font-size:10px; color:#7878a0; }
+      .sbi-m-tema-label { font-size:10px; color:#7878a0; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
+      .sbi-m-tema-input {
+        width:100%; background:#17172a; border:1px solid #28283f; border-radius:7px;
+        color:#eeeeff; padding:7px 10px; font-size:12px; font-family:inherit;
+        outline:none; margin-bottom:12px; transition:border-color .15s;
+      }
+      .sbi-m-tema-input:focus { border-color:#7c3aed; }
+      .sbi-m-actions { display:flex; gap:8px; }
       .sbi-m-skip {
-        width:100%; padding:7px; background:none; border:1px solid #28283f;
+        flex:1; padding:7px; background:none; border:1px solid #28283f;
         border-radius:7px; color:#7878a0; font-size:11px; font-family:inherit;
         cursor:pointer; transition:border-color .15s, color .15s;
       }
       .sbi-m-skip:hover { border-color:#7878a0; color:#c4c4e0; }
+      .sbi-m-confirm {
+        flex:1; padding:7px; background:#28283f; border:1px solid #3a3a5a;
+        border-radius:7px; color:#7878a0; font-size:11px; font-weight:700;
+        font-family:inherit; cursor:not-allowed; transition:all .15s;
+      }
+      .sbi-m-confirm.sbi-ready {
+        background:linear-gradient(135deg,#7c3aed,#0891b2);
+        border-color:transparent; color:#fff; cursor:pointer;
+      }
+      .sbi-m-confirm.sbi-ready:hover { opacity:.9; }
     </style>
     <div id="sbi-modal-backdrop"></div>
     <div id="sbi-modal-box">
       <div class="sbi-m-title">❌ Por que você errou?</div>
-      <div class="sbi-m-sub">Isso ajuda a entender seus padrões de erro</div>
+      <div class="sbi-m-sub">Selecione o motivo e a temática (opcional)</div>
       <div class="sbi-m-grid">
         ${ERROR_TYPES.map(e => `
-          <button class="sbi-m-btn" data-value="${e.value}" style="border-color:${e.color}22;">
+          <button class="sbi-m-btn" data-value="${e.value}" data-color="${e.color}" style="border-color:${e.color}22;">
             <span class="sbi-m-btn-label" style="color:${e.color}">${e.label}</span>
             <span class="sbi-m-btn-desc">${e.desc}</span>
           </button>
         `).join('')}
       </div>
-      <button class="sbi-m-skip" id="sbi-m-skip-btn">Pular — não classificar</button>
+      <div class="sbi-m-tema-label">Temática <span style="opacity:.5;text-transform:none;letter-spacing:0">(opcional)</span></div>
+      <input class="sbi-m-tema-input" id="sbi-m-tema" type="text" placeholder="ex: equivalência, negação, proporcionalidade…" />
+      <div class="sbi-m-actions">
+        <button class="sbi-m-skip" id="sbi-m-skip-btn">Pular</button>
+        <button class="sbi-m-confirm" id="sbi-m-confirm-btn" disabled>Confirmar</button>
+      </div>
     </div>
   `;
 
   document.body.appendChild(modal);
 
-  function close(value) {
+  let selectedType = null;
+
+  function close(result) {
     modal.remove();
-    onSelect(value);
+    onSelect(result);
   }
 
   modal.querySelectorAll('.sbi-m-btn').forEach(btn => {
-    btn.addEventListener('click', () => close(btn.dataset.value));
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('.sbi-m-btn').forEach(b => {
+        b.classList.remove('sbi-selected');
+        b.style.borderColor = b.dataset.color + '22';
+      });
+      btn.classList.add('sbi-selected');
+      btn.style.borderColor = btn.dataset.color + '99';
+      selectedType = btn.dataset.value;
+      const confirm = modal.querySelector('#sbi-m-confirm-btn');
+      confirm.disabled = false;
+      confirm.classList.add('sbi-ready');
+    });
   });
-  modal.querySelector('#sbi-m-skip-btn').addEventListener('click', () => close(null));
-  modal.querySelector('#sbi-modal-backdrop').addEventListener('click', () => close(null));
+
+  modal.querySelector('#sbi-m-confirm-btn').addEventListener('click', () => {
+    if (!selectedType) return;
+    const tema = modal.querySelector('#sbi-m-tema').value.trim();
+    close({ errorType: selectedType, tema: tema || null });
+  });
+
+  modal.querySelector('#sbi-m-skip-btn').addEventListener('click', () => close({ errorType: null, tema: null }));
+  modal.querySelector('#sbi-modal-backdrop').addEventListener('click', () => close({ errorType: null, tema: null }));
+
+  // Enter no campo de tema confirma se já selecionou tipo
+  modal.querySelector('#sbi-m-tema').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && selectedType) {
+      const tema = modal.querySelector('#sbi-m-tema').value.trim();
+      close({ errorType: selectedType, tema: tema || null });
+    }
+  });
 }
 
 // ── Processa resultado a partir de um bloco já identificado ──
 function processBlock(block, isCorrect, selectedLetter) {
   const data = parseQuestionBlock(block, selectedLetter);
-  if (!data) { console.log('[StudyBI] parseQuestionBlock retornou null'); return; }
+  if (!data) {
+    showToast('⚠️ StudyBI: não foi possível identificar a questão no DOM', '#ef4444');
+    return;
+  }
   if (logged.has(data.questionId)) { showToast('📌 Questão já registrada no StudyBI!', '#7878a0'); return; }
 
   if (!isCorrect) {
-    showErrorModal(errorType => {
-      logQuestion({ ...data, correct: false, errorType: errorType || null });
+    showErrorModal(({ errorType, tema }) => {
+      logQuestion({ ...data, correct: false, errorType: errorType || null, tema: tema || null });
     });
   } else {
     logQuestion({ ...data, correct: true });
@@ -439,28 +541,34 @@ document.addEventListener('click', (e) => {
   setTimeout(() => {
     if (block) {
       const blockText = block.innerText || '';
-      const isCorrect = /acertou|você acertou|resolvi certo/i.test(blockText);
-      const isWrong   = /errou|você errou|resposta:\s*[A-E]|resolvi errado/i.test(blockText);
+      const isCorrect = /acertou|você acertou|resolvi certo|resposta correta|correto!/i.test(blockText);
+      const isWrong   = /você errou|resolvi errado/i.test(blockText);
       if (isCorrect || isWrong) { processBlock(block, isCorrect, optionAtClick); return; }
     }
 
     // Fallback: varre a página mas só processa questões ainda não registradas
+    let processed = false;
     const all = document.querySelectorAll('*');
     for (const node of all) {
       const t = (node.innerText || node.textContent || '').trim();
       if (t.length > 150 || t.length < 5) continue;
-      if (!/acertou|errou|resolvi/i.test(t)) continue;
-      const isCorrect = /acertou|você acertou|resolvi certo/i.test(t);
-      const isWrong   = /errou|você errou|resolvi errado|resposta:\s*[A-E]/i.test(t);
+      if (!/acertou|você errou|resolvi/i.test(t)) continue;
+      const isCorrect = /acertou|você acertou|resolvi certo|resposta correta|correto!/i.test(t);
+      const isWrong   = /você errou|resolvi errado/i.test(t);
       if (!isCorrect && !isWrong) continue;
       const b = findQuestionBlock(node);
       if (!b) continue;
       const data = parseQuestionBlock(b);
       if (!data || logged.has(data.questionId)) continue;
       processBlock(b, isCorrect, optionAtClick);
+      processed = true;
       break;
     }
-  }, 1000);
+
+    if (!processed) {
+      showToast('⚠️ StudyBI: resultado detectado mas questão não identificada', '#ef4444');
+    }
+  }, 1500);
 }, true);
 
 // ── Estratégia 2: MutationObserver como fallback ──
@@ -469,14 +577,14 @@ const observer = new MutationObserver(mutations => {
     for (const node of mutation.addedNodes) {
       if (node.nodeType !== 1) continue;
       const text = node.innerText || node.textContent || '';
-      if (!/acertou|errou|você errou|você acertou/i.test(text)) continue;
+      if (!/acertou|você errou|resolvi/i.test(text)) continue;
 
-      // Tenta encontrar o bloco subindo a partir do nó adicionado
+      const isCorrect = /acertou|você acertou|resolvi certo|resposta correta|correto!/i.test(text);
+      const isWrong   = /você errou|resolvi errado/i.test(text);
+      if (!isCorrect && !isWrong) continue;
+
       const block = findQuestionBlock(node);
-      if (block) {
-        const isCorrect = /acertou|você acertou/i.test(text);
-        processBlock(block, isCorrect);
-      }
+      if (block) processBlock(block, isCorrect);
     }
   }
 });

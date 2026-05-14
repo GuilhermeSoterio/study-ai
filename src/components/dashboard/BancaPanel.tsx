@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '@/store'
 import { Card, CardLabel } from '@/components/ui/Card'
+import { localDate } from '@/lib/utils'
 
 function pct(a: number, b: number) {
   return b === 0 ? 0 : Math.round((a / b) * 100)
@@ -248,7 +249,7 @@ function Diversificacao() {
   const { items, score } = useMemo(() => {
     const cutoff = period === 0
       ? ''
-      : new Date(Date.now() - period * 86400000).toISOString().slice(0, 10)
+      : localDate(new Date(Date.now() - period * 86400000))
 
     const map = new Map<string, number>()
     for (const s of sessions) {

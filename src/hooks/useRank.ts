@@ -2,26 +2,31 @@ import { useMemo } from 'react'
 import { useStore } from '@/store'
 
 export interface RankInfo {
-  name:      string
-  insig:     string
-  color:     string
-  index:     number
-  goalPct:   number
-  withinPct: number
-  next:      { name: string; min: number } | null
-  sub:       string
-  total:     number
+  name:         string
+  insig:        string
+  color:        string
+  avatar:       string
+  index:        number
+  goalPct:      number
+  withinPct:    number
+  next:         { name: string; min: number } | null
+  sub:          string
+  total:        number
+  subLevel:     'N1' | 'N2' | 'N3'
+  subLabel:     string
+  cardReq:      number
+  totalReviews: number
 }
 
-const RANKS = [
-  { min: 0,   name: 'RECRUTA',  insig: '◦',          color: '#9a9485' },
-  { min: 5,   name: 'CABO',     insig: '▲',           color: '#8b7355' },
-  { min: 15,  name: 'SARGENTO', insig: '▲▲',          color: '#6b8e5a' },
-  { min: 30,  name: 'TENENTE',  insig: '★',           color: '#4a7c59' },
-  { min: 50,  name: 'CAPITÃO',  insig: '★★',          color: '#3a6648' },
-  { min: 65,  name: 'MAJOR',    insig: '★★★',         color: '#d4a017' },
-  { min: 80,  name: 'CORONEL',  insig: '✦✦✦✦',        color: '#c0392b' },
-  { min: 100, name: 'GENERAL',  insig: '⭐⭐⭐⭐⭐',   color: '#8b0000' },
+export const RANKS = [
+  { min: 0,   name: 'RECRUTA',  insig: '◦',        color: '#9a9485', avatar: '🪖',  cardReq: 0    },
+  { min: 5,   name: 'CABO',     insig: '▲',         color: '#8b7355', avatar: '🎖️', cardReq: 30   },
+  { min: 15,  name: 'SARGENTO', insig: '▲▲',        color: '#6b8e5a', avatar: '⚔️', cardReq: 100  },
+  { min: 30,  name: 'TENENTE',  insig: '★',         color: '#4a7c59', avatar: '⭐', cardReq: 500  },
+  { min: 50,  name: 'CAPITÃO',  insig: '★★',        color: '#3a6648', avatar: '🛡️', cardReq: 1000 },
+  { min: 65,  name: 'MAJOR',    insig: '★★★',       color: '#d4a017', avatar: '🦅', cardReq: 2500 },
+  { min: 80,  name: 'CORONEL',  insig: '✦✦✦✦',      color: '#c0392b', avatar: '🎯', cardReq: 3500 },
+  { min: 100, name: 'GENERAL',  insig: '⭐⭐⭐⭐⭐', color: '#8b0000', avatar: '👑', cardReq: 5000 },
 ]
 
 const RANK_SUBS: Record<string, string> = {
@@ -35,8 +40,15 @@ const RANK_SUBS: Record<string, string> = {
   GENERAL:  'Meta conquistada. A missão está cumprida, General.',
 }
 
+function calcSubLevel(pct: number): { subLevel: 'N1' | 'N2' | 'N3'; subLabel: string } {
+  if (pct >= 90) return { subLevel: 'N3', subLabel: 'Elite'    }
+  if (pct >= 50) return { subLevel: 'N2', subLabel: 'Veterano' }
+  return              { subLevel: 'N1', subLabel: 'Operador' }
+}
+
 export function useRank(): RankInfo {
   const sessionStats = useStore(s => s.sessionStats)
+  const flashcards   = useStore(s => s.flashcards)
   const config       = useStore(s => s.config)
 
   return useMemo(() => {
@@ -44,6 +56,8 @@ export function useRank(): RankInfo {
     const goalPct = config.big_goal > 0
       ? Math.min(100, Math.round((total / config.big_goal) * 100))
       : 0
+
+    const totalReviews = flashcards.reduce((sum, c) => sum + (c.reviews?.length ?? 0), 0)
 
     let rankIdx = 0
     for (let i = RANKS.length - 1; i >= 0; i--) {
@@ -57,14 +71,19 @@ export function useRank(): RankInfo {
       ? Math.min(100, Math.round(((goalPct - current.min) / (next.min - current.min)) * 100))
       : 100
 
+    const { subLevel, subLabel } = calcSubLevel(withinPct)
+
     return {
       ...current,
       index:    rankIdx,
       goalPct,
       withinPct,
       next,
-      sub:   RANK_SUBS[current.name] ?? '',
+      sub:          RANK_SUBS[current.name] ?? '',
       total,
+      subLevel,
+      subLabel,
+      totalReviews,
     }
-  }, [sessionStats, config])
+  }, [sessionStats, flashcards, config])
 }

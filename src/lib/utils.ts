@@ -1,6 +1,11 @@
 import type { SessionStat } from '@/types'
 import type { TNode, Pos, NodeStats } from './types'
 
+// Returns 'YYYY-MM-DD' in local time (avoids UTC-offset bugs with toISOString)
+export function localDate(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 // ── Dimensions ────────────────────────────────────────────────────────────────
 export const W = 134 // node width
 export const H = 64 // node height

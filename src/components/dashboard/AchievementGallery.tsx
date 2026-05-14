@@ -30,7 +30,7 @@ function AchievementCard({ a }: { a: Achievement }) {
       style={
         a.unlocked
           ? { background: rs.bg, border: `1.5px solid ${rs.border}` }
-          : { background: '#f8fafc', border: '1.5px dashed #cbd5e1' }
+          : { background: 'rgb(var(--color-surface2))', border: '1.5px dashed rgb(var(--color-border))' }
       }
     >
       {/* Unlocked check */}
@@ -468,8 +468,8 @@ function DiscRow({ row }: { row: DiscAchievementRow }) {
     <div
       className="rounded-card overflow-hidden"
       style={{
-        border: rs ? `1.5px solid ${rs.border}` : '1px solid #e2e8f0',
-        background: rs ? rs.bg : '#ffffff',
+        border: rs ? `1.5px solid ${rs.border}` : '1px solid rgb(var(--color-border))',
+        background: rs ? rs.bg : 'rgb(var(--color-surface))',
       }}
     >
       {/* Header */}
@@ -596,7 +596,7 @@ export function AchievementGallery() {
             style={
               category === c.id
                 ? { background: '#4a7c59', color: '#fff' }
-                : { background: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1' }
+                : { background: 'rgb(var(--color-surface2))', color: 'rgb(var(--color-muted))', border: '1px solid rgb(var(--color-border))' }
             }
           >
             {c.label}
@@ -609,7 +609,7 @@ export function AchievementGallery() {
             style={
               onlyUnlocked
                 ? { background: '#d4a017', color: '#fff' }
-                : { background: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1' }
+                : { background: 'rgb(var(--color-surface2))', color: 'rgb(var(--color-muted))', border: '1px solid rgb(var(--color-border))' }
             }
           >
             {onlyUnlocked ? '✓ Obtidas' : 'Obtidas'}

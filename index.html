@@ -3,8 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>StudyBI · Tribunais TI</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>New Age · Tribunais TI</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <script>
+      (function(){
+        var saved = localStorage.getItem('newage_theme');
+        var dark  = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (!dark) return;
+        var root = document.documentElement;
+        root.classList.add('dark');
+        var vars = {
+          '--color-bg':       '13 17 23',
+          '--color-surface':  '22 27 34',
+          '--color-surface2': '13 17 23',
+          '--color-surface3': '33 38 45',
+          '--color-border':   '48 54 61',
+          '--color-text':     '230 237 243',
+          '--color-muted':    '139 148 158',
+          '--color-dim':      '110 118 129'
+        };
+        for (var k in vars) root.style.setProperty(k, vars[k]);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

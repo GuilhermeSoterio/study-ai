@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useStore } from '@/store'
 import { useEliteDays, ELITE_TAXA, ELITE_MIN_Q } from '@/hooks/useMedals'
 import { Card, CardLabel } from '@/components/ui/Card'
+import { localDate } from '@/lib/utils'
 
 function volumeLevel(count: number) {
   if (count === 0) return 0
@@ -36,7 +37,7 @@ export function Heatmap() {
     for (let i = 364; i >= 0; i--) {
       const d = new Date(today)
       d.setDate(d.getDate() - i)
-      const key   = d.toISOString().slice(0, 10)
+      const key   = localDate(d)
       const count = map[key] ?? 0
       cells.push({ date: key, count, level: volumeLevel(count), elite: eliteSet.has(key) })
     }

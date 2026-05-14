@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useRank, type RankInfo } from '@/hooks/useRank'
 
-const LS_KEY = 'studybi_rank'
+const LS_KEY = 'newage_rank'
 
 function RankPromoModal({ rank, onClose }: { rank: RankInfo; onClose: () => void }) {
   return (

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useStore } from '@/store'
 import { useEliteDays, ELITE_TAXA, ELITE_MIN_Q } from '@/hooks/useMedals'
+import { localDate } from '@/lib/utils'
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
 
@@ -12,7 +13,7 @@ function dateRange(daysAgoStart: number, daysAgoEnd: number): { start: string; e
   const today = new Date()
   const end   = new Date(today); end.setDate(today.getDate() - daysAgoEnd)
   const start = new Date(today); start.setDate(today.getDate() - daysAgoStart)
-  return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) }
+  return { start: localDate(start), end: localDate(end) }
 }
 
 function deltaColor(d: number) {
@@ -175,7 +176,7 @@ function GoalStrip({ thisWeek, lastWeek, eliteDates }: {
   const config = useStore(s => s.config)
   const days   = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i))
-    return d.toISOString().slice(0, 10)
+    return localDate(d)
   })
 
   const byDate = useMemo(() => {
@@ -218,12 +219,12 @@ function GoalStrip({ thisWeek, lastWeek, eliteDates }: {
                     ? 'rgba(74,124,89,0.12)'
                     : count > 0
                     ? 'rgba(74,124,89,0.05)'
-                    : '#f1f5f9',
+                    : 'rgb(var(--color-bg))',
                   border: isElite
                     ? '1.5px solid rgba(212,160,23,0.5)'
                     : hitGoal
                     ? '1px solid rgba(74,124,89,0.3)'
-                    : '1px solid #e2e8f0',
+                    : '1px solid rgb(var(--color-border))',
                 }}
                 title={`${date}: ${count}q${isElite ? ' · ⭐ Elite' : ''}`}
               >

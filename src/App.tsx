@@ -3,10 +3,12 @@ import { Outlet } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useStore } from '@/store'
 import { setBackendToken } from '@/lib/backendApi'
-import { Header }       from '@/components/layout/Header'
-import { Login }        from '@/components/layout/Login'
-import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
-import { Toasts }       from '@/components/ui/Toast'
+import { Header }          from '@/components/layout/Header'
+import { Login }           from '@/components/layout/Login'
+import { TopMatsSidebar }  from '@/components/layout/TopMatsSidebar'
+import { ErrorBoundary }   from '@/components/ui/ErrorBoundary'
+import { Toasts }          from '@/components/ui/Toast'
+import { LoadingScreen }   from '@/components/ui/LoadingScreen'
 
 export default function App() {
   const userId  = useStore(s => s.userId)
@@ -21,24 +23,23 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [loadAll])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-bg">
-        <div className="gradient-text text-2xl font-black animate-pulse">StudyBI</div>
-      </div>
-    )
-  }
+  if (loading) return <LoadingScreen />
 
   if (!userId) return <Login />
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="flex min-h-screen bg-bg">
       <Header />
-      <main className="max-w-[1260px] mx-auto px-7 py-6">
-        <ErrorBoundary>
-          <Outlet />
-        </ErrorBoundary>
-      </main>
+      <div className="flex-1 min-w-0 flex gap-5 items-start px-8 py-6">
+        <main className="flex-1 min-w-0">
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
+        </main>
+        <aside className="hidden xl:block w-[200px] shrink-0 sticky top-6 max-h-[calc(100vh-48px)] overflow-y-auto pb-6">
+          <TopMatsSidebar />
+        </aside>
+      </div>
       <Toasts />
     </div>
   )

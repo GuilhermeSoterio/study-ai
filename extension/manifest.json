@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "StudyBI · QConcursos",
+  "name": "New Age · QConcursos",
   "version": "1.0",
-  "description": "Registra automaticamente suas questões do QConcursos no StudyBI",
+  "description": "Registra automaticamente suas questões do QConcursos no New Age",
   "permissions": ["storage"],
   "host_permissions": [
     "https://www.qconcursos.com/*",
@@ -15,6 +15,6 @@
   }],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "StudyBI"
+    "default_title": "New Age"
   }
 }
