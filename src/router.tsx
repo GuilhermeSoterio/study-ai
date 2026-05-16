@@ -4,6 +4,7 @@ import { LoadingScreen } from '@/components/ui/LoadingScreen'
 import { NewAge }     from '@/components/newage/NewAge'
 import { Dashboard }  from '@/components/dashboard/Dashboard'
 import { Flashcards } from '@/components/flashcards/Flashcards'
+import { RankCards }  from '@/components/rankcards/RankCards'
 import { Historico }  from '@/components/historico/Historico'
 import { Analise }    from '@/components/analise/Analise'
 import { Materias }   from '@/components/materias/Materias'
@@ -33,6 +34,7 @@ export const router = createHashRouter([
       { path: 'analise',    element: <Analise /> },
       { path: 'historico',  element: <Historico /> },
       { path: 'flashcards', element: <Flashcards /> },
+      { path: 'rankcards',  element: <RankCards /> },
       { path: 'materias',   element: <Materias /> },
       { path: 'personagem', element: <PersonagemV2 /> },
       { path: 'relatorio',     element: <Relatorio /> },

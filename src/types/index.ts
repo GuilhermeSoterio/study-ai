@@ -149,12 +149,34 @@ export interface Questao {
   created_at?: string
 }
 
+export type RankCardElo = 'Platina' | 'Ouro' | 'Prata' | 'Bronze'
+
+export interface RankCard {
+  id: string
+  user_id: string
+  ts: number
+  created_at?: string
+  disciplina: string
+  materia: string
+  modalidade: string
+  elo: RankCardElo
+  bloco_tematico: string
+  prioridade: number
+  incidencia: number
+  q: string
+  a: string
+  reviews: FlashcardReview[]
+  ignored?:  boolean
+  mastered?: boolean
+}
+
 export type TabName =
   | 'dashboard'
   | 'registrar'
   | 'analise'
   | 'historico'
   | 'flashcards'
+  | 'rankcards'
   | 'materias'
   | 'verbos'
   | 'personagem'

@@ -7,6 +7,7 @@ import type { CharacterData, Session, Flashcard, SessionStat } from '@/types'
 import { createAuthSlice }       from './slices/authSlice'
 import { createSessionsSlice }   from './slices/sessionsSlice'
 import { createFlashcardsSlice } from './slices/flashcardsSlice'
+import { createRankCardsSlice }  from './slices/rankCardsSlice'
 import { createConceitosSlice }  from './slices/conceitosSlice'
 import { createConfigSlice }     from './slices/configSlice'
 import { createPurgeSlice }      from './slices/purgeSlice'
@@ -59,6 +60,7 @@ export const useStore = create<AppState>()((...a) => ({
   ...createAuthSlice(...a),
   ...createSessionsSlice(...a),
   ...createFlashcardsSlice(...a),
+  ...createRankCardsSlice(...a),
   ...createConceitosSlice(...a),
   ...createConfigSlice(...a),
   ...createPurgeSlice(...a),
@@ -78,7 +80,7 @@ export const useStore = create<AppState>()((...a) => ({
 
     set({ userId: user.id, userEmail: user.email ?? null })
 
-    const [sr, ssR, cr, concR, cfgR, bancasR, discR, discSupaR, treeR, charR, purgeR, questR] = await Promise.all([
+    const [sr, ssR, cr, rankR, concR, cfgR, bancasR, discR, discSupaR, treeR, charR, purgeR, questR] = await Promise.all([
       supabase.from('sessions')
         .select('*')
         .eq('user_id', user.id)
@@ -88,6 +90,7 @@ export const useStore = create<AppState>()((...a) => ({
         .select('id,date,total,correct,disc,mat,tema')
         .eq('user_id', user.id),
       supabase.from('flashcards').select('*').eq('user_id', user.id).limit(2000),
+      supabase.from('rank_cards').select('*').eq('user_id', user.id).limit(2000),
       supabase.from('conceitos').select('*').eq('user_id', user.id).order('ts', { ascending: false }),
       supabase.from('user_config').select('*').eq('user_id', user.id).single(),
       supabase.from('bancas').select('*').eq('user_id', user.id).single(),
@@ -136,6 +139,7 @@ export const useStore = create<AppState>()((...a) => ({
       hasMoreSessions: (sr.data?.length ?? 0) >= 500,
       sessionStats:    ssR.data ?? [],
       flashcards:      (cr.data ?? []).map(c => ({ ...c, reviews: c.reviews ?? [] })),
+      rankCards:       (rankR.data ?? []).map(c => ({ ...c, reviews: c.reviews ?? [] })),
       conceitos:       (concR.data ?? []).map(c => ({ ...c, reviews: c.reviews ?? [] })),
       config:       cfgData    ?? { ...DEFAULT_CONFIG, user_id: user.id },
       bancas:       bancasData?.data ?? DEFAULT_BANCAS,

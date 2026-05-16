@@ -17,7 +17,8 @@
       "Bash(dir C:\\\\projetos\\\\study-bi *)",
       "Bash(Get-ChildItem \"C:\\\\projetos\\\\study-bi\\\\src\" -Filter \"types*\" -Recurse)",
       "Bash(Select-Object FullName)",
-      "Bash(go build *)"
+      "Bash(go build *)",
+      "Bash(git add *)"
     ]
   }
 }

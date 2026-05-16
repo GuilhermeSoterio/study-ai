@@ -4,7 +4,7 @@ import {
   SquaresFour, Sparkle, NotePencil, Notebook,
   MagnifyingGlass, CalendarBlank, ChartBar,
   Stack, BookBookmark, Medal, UserCircle,
-  Sun, Moon, SignOut, Target, Trophy, Brain,
+  Sun, Moon, SignOut, Target, Trophy, Brain, Lightning,
   type Icon,
 } from '@phosphor-icons/react'
 import { useStore } from '@/store'
@@ -51,6 +51,7 @@ const GROUPS: Group[] = [
     Icon: Sword,
     items: [
       { path: '/flashcards', label: 'Flashcards', Icon: Stack        },
+      { path: '/rankcards',  label: 'EloCards',   Icon: Lightning    },
       { path: '/materias',   label: 'Matérias',   Icon: BookBookmark },
       { path: '/patentes',   label: 'Patentes',   Icon: Medal        },
       { path: '/ranking',    label: 'Ranking',    Icon: Trophy       },

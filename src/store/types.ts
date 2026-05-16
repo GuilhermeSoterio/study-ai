@@ -1,4 +1,4 @@
-import type { Session, SessionStat, Flashcard, Conceito, UserConfig, VerbConjugation, VerbSession, CharacterData, PurgeRecord, Questao } from '@/types'
+import type { Session, SessionStat, Flashcard, Conceito, UserConfig, VerbConjugation, VerbSession, CharacterData, PurgeRecord, Questao, RankCard } from '@/types'
 import type { TNode } from '@/components/personagem/types'
 
 export interface AppState {
@@ -33,6 +33,13 @@ export interface AppState {
   addFlashcard:     (card: Flashcard) => void
   updateFlashcard:  (id: string, updates: Partial<Flashcard>) => void
   removeFlashcard:  (id: string) => void
+
+  // ── RankCards ─────────────────────────────────────────────────────────
+  rankCards:        RankCard[]
+  addRankCard:      (card: RankCard) => void
+  addRankCards:     (cards: RankCard[]) => void
+  updateRankCard:   (id: string, updates: Partial<RankCard>) => void
+  removeRankCard:   (id: string) => void
 
   // ── Conceitos ─────────────────────────────────────────────────────────
   conceitos:      Conceito[]

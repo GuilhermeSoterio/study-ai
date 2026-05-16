@@ -188,3 +188,31 @@ AS $func$
   GROUP BY s.user_id, p.display_name, p.avatar_url, c.big_goal
   ORDER BY total_questions DESC;
 $func$;
+
+-- RANK_CARDS (EloCards — alta incidência, ranqueados por frequência em provas)
+CREATE TABLE IF NOT EXISTS rank_cards (
+  id             TEXT PRIMARY KEY,
+  user_id        UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  ts             BIGINT NOT NULL,
+  disciplina     TEXT NOT NULL,
+  materia        TEXT NOT NULL DEFAULT '',
+  modalidade     TEXT NOT NULL DEFAULT 'EloCards de Alta Incidência',
+  elo            TEXT NOT NULL,
+  bloco_tematico TEXT NOT NULL,
+  prioridade     INT NOT NULL DEFAULT 1,
+  incidencia     INT NOT NULL DEFAULT 1,
+  q              TEXT NOT NULL,
+  a              TEXT NOT NULL,
+  reviews        JSONB NOT NULL DEFAULT '[]',
+  ignored        BOOLEAN DEFAULT FALSE,
+  created_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE rank_cards ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "rank_cards_owner" ON rank_cards
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- Adicionar coluna mastered na tabela rank_cards (rodar se a tabela já existir)
+ALTER TABLE rank_cards ADD COLUMN IF NOT EXISTS mastered BOOLEAN DEFAULT FALSE;
