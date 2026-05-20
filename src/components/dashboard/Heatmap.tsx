@@ -66,7 +66,8 @@ export function Heatmap() {
         </div>
       </div>
 
-      <div className="flex gap-0.5 overflow-x-auto pb-1">
+      {/* Desktop: 52 semanas */}
+      <div className="hidden md:flex gap-0.5 overflow-x-auto pb-1">
         {weeks.map((week, wi) => (
           <div key={wi} className="flex flex-col gap-0.5">
             {week.map(cell => (
@@ -74,6 +75,26 @@ export function Heatmap() {
                 key={cell.date}
                 title={`${cell.date}: ${cell.count}q${cell.elite ? ` · ⭐ Elite` : ''}`}
                 className="w-2.5 h-2.5 rounded-[2px] hover:scale-150 transition-transform cursor-default"
+                style={
+                  cell.elite
+                    ? { background: ELITE_COLOR, border: `1px solid ${ELITE_BORDER}` }
+                    : { background: LEVEL_COLORS[cell.level] }
+                }
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* Mobile: últimas 26 semanas com células maiores */}
+      <div className="flex md:hidden gap-1 overflow-x-auto pb-1">
+        {weeks.slice(-26).map((week, wi) => (
+          <div key={wi} className="flex flex-col gap-1">
+            {week.map(cell => (
+              <div
+                key={cell.date}
+                title={`${cell.date}: ${cell.count}q${cell.elite ? ` · ⭐ Elite` : ''}`}
+                className="w-3 h-3 rounded-[2px] cursor-default"
                 style={
                   cell.elite
                     ? { background: ELITE_COLOR, border: `1px solid ${ELITE_BORDER}` }

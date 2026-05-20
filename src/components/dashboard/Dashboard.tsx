@@ -22,7 +22,7 @@ export function Dashboard() {
     <div className="space-y-3">
 
       {/* ── COCKPIT ─────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr_1fr] gap-3 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1fr_2fr_1fr] gap-3 items-start">
 
         {/* LEFT — Status do Personagem */}
         <div className="space-y-3">
@@ -47,7 +47,7 @@ export function Dashboard() {
         </div>
 
         {/* RIGHT — Próximos Alvos */}
-        <div className="space-y-3">
+        <div className="space-y-3 md:col-span-2 lg:col-span-1">
           <div className="font-display font-bold text-muted uppercase px-0.5" style={{ fontSize: 11, letterSpacing: '0.22em' }}>
             ● Próximos Alvos
           </div>
