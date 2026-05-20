@@ -170,22 +170,14 @@ function FrenteRow({ f, dir }: { f: FrenteChange; dir: 'up' | 'down' }) {
 
 // ── Daily goal strip ──────────────────────────────────────────────────────────
 
-function GoalStrip({ thisWeek, lastWeek, eliteDates }: {
-  thisWeek: WeekStats; lastWeek: WeekStats; eliteDates: Set<string>
+function GoalStrip({ thisWeek: _thisWeek, eliteDates }: {
+  thisWeek: WeekStats; lastWeek?: WeekStats; eliteDates: Set<string>
 }) {
   const config = useStore(s => s.config)
   const days   = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - (6 - i))
     return localDate(d)
   })
-
-  const byDate = useMemo(() => {
-    const map = new Map<string, number>()
-    ;[...thisWeek.dates].forEach(date => {
-      // count questions from dates set
-    })
-    return map
-  }, [thisWeek])
 
   // rebuild per-day totals from sessionStats for strip
   const sessionStats = useStore(s => s.sessionStats)

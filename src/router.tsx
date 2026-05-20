@@ -17,12 +17,6 @@ import { Leaderboard }  from '@/components/ranking/Leaderboard'
 import { Foco }        from '@/components/foco/Foco'
 import { Conceitos }   from '@/components/estudo/Conceitos'
 
-const Placeholder = ({ name }: { name: string }) => (
-  <div className="flex items-center justify-center h-64 text-muted text-sm">
-    {name} — em migração
-  </div>
-)
-
 export const router = createHashRouter([
   {
     path: '/',

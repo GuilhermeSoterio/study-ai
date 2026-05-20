@@ -147,7 +147,7 @@ function WeekCompareSection() {
         callbacks: {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           label: (ctx: any) => {
-            if (ctx.raw === null || ctx.raw === 0) return null
+            if (ctx.raw === null || ctx.raw === 0) return
             const isAcc = (ctx.dataset.label as string).includes('Acurácia')
             return ` ${ctx.dataset.label}: ${ctx.raw}${isAcc ? '%' : 'q'}`
           },
