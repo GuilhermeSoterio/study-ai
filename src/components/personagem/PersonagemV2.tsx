@@ -44,7 +44,7 @@ function CharacterPanel({ char }: { char: CharacterData }) {
   const xpSpan = char.xp_next_level - (LEVEL_MIN[char.level] ?? 0)
 
   return (
-    <div className="bg-surface border border-border rounded-card p-6 flex flex-col sm:flex-row gap-6 items-center sm:items-start">
+    <div className="bg-surface border border-border rounded-card p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:gap-6 items-center sm:items-start">
       <div className="relative shrink-0">
         <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/20 border border-primary/30 flex items-center justify-center text-5xl select-none">
           {char.level_emoji}
@@ -174,7 +174,7 @@ export function PersonagemV2() {
           <Achievements achievements={char.achievements} />
         </>
       ) : (
-        <div className="bg-surface border border-border rounded-card p-5 flex items-center justify-between gap-4">
+        <div className="bg-surface border border-border rounded-card p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
             <span className="text-xl">🔌</span>
             <div>
@@ -189,7 +189,7 @@ export function PersonagemV2() {
           <button
             onClick={handleRetry}
             disabled={retrying}
-            className="shrink-0 px-3 py-1.5 border border-border rounded-sm text-xs text-muted hover:text-text hover:border-primary/40 transition-all disabled:opacity-50"
+            className="self-start sm:self-auto shrink-0 px-3 py-1.5 border border-border rounded-sm text-xs text-muted hover:text-text hover:border-primary/40 transition-all disabled:opacity-50"
           >
             {retrying ? '⏳ Buscando...' : '↻ Tentar novamente'}
           </button>

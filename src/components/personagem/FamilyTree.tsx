@@ -76,7 +76,7 @@ export function FamilyTree({ root, sessions }: { root: TNode; sessions: SessionS
       </div>
 
       {/* Scrollable canvas */}
-      <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 420 }}>
+      <div className="overflow-x-auto overflow-y-hidden">
         <div className="relative" style={{ width: canvasW, height: canvasH }}>
           {/* SVG edges */}
           <svg
