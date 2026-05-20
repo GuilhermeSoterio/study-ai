@@ -95,7 +95,7 @@ export function RankCardCreate() {
         {/* Elo selector */}
         <div className="space-y-1.5">
           <label className="text-[11px] font-bold uppercase tracking-widest text-muted">Elo</label>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {ELOS.map(e => (
               <button
                 key={e.elo}
@@ -112,19 +112,21 @@ export function RankCardCreate() {
           </div>
         </div>
 
-        {/* Bloco Temático + Prioridade + Incidência */}
-        <div className="grid grid-cols-[1fr_auto_auto] gap-3 items-end">
+        {/* Bloco Temático */}
+        <div className="space-y-1.5">
+          <label className="text-[11px] font-bold uppercase tracking-widest text-muted">Bloco Temático</label>
+          <input
+            value={blocoTematico}
+            onChange={e => setBlocoTematico(e.target.value)}
+            placeholder="Ex: Dever de Fundamentação e Publicidade"
+            className="w-full bg-surface2 border border-border rounded-sm px-3 py-2.5 text-sm text-text focus:outline-none focus:border-amber-400/60"
+            required
+          />
+        </div>
+
+        {/* Prioridade + Incidência */}
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <label className="text-[11px] font-bold uppercase tracking-widest text-muted">Bloco Temático</label>
-            <input
-              value={blocoTematico}
-              onChange={e => setBlocoTematico(e.target.value)}
-              placeholder="Ex: Dever de Fundamentação e Publicidade"
-              className="w-full bg-surface2 border border-border rounded-sm px-3 py-2.5 text-sm text-text focus:outline-none focus:border-amber-400/60"
-              required
-            />
-          </div>
-          <div className="space-y-1.5 w-24">
             <label className="text-[11px] font-bold uppercase tracking-widest text-muted">Prioridade</label>
             <input
               type="number" min={1} value={prioridade}
@@ -132,7 +134,7 @@ export function RankCardCreate() {
               className="w-full bg-surface2 border border-border rounded-sm px-3 py-2.5 text-sm text-text focus:outline-none focus:border-amber-400/60"
             />
           </div>
-          <div className="space-y-1.5 w-28">
+          <div className="space-y-1.5">
             <label className="text-[11px] font-bold uppercase tracking-widest text-muted">Incidência</label>
             <input
               type="number" min={1} value={incidencia}

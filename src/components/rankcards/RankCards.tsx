@@ -31,12 +31,12 @@ export function RankCards() {
       </div>
 
       {/* Sub-nav */}
-      <div className="flex gap-2 border-b border-border pb-3">
+      <div className="flex gap-2 border-b border-border pb-3 overflow-x-auto">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setSection(tab.id)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-sm text-[13px] font-semibold transition-all ${
+            className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-sm text-[13px] font-semibold transition-all ${
               section === tab.id
                 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
                 : 'text-muted hover:bg-surface2 hover:text-text'

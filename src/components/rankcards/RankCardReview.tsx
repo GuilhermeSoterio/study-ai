@@ -386,7 +386,7 @@ function CardView({ card, onRate }: { card: RankCard; onRate: (r: 1 | 2 | 3) => 
       <div className="relative">
         <button
           onClick={() => setEditing(true)}
-          className="absolute top-2 right-2 z-20 w-7 h-7 flex items-center justify-center rounded text-[12px] text-muted opacity-40 hover:opacity-100 hover:bg-surface3 transition-all"
+          className="absolute top-2 right-2 z-20 w-9 h-9 flex items-center justify-center rounded text-[13px] text-muted opacity-40 hover:opacity-100 hover:bg-surface3 transition-all"
         >✏</button>
         <div className="cursor-pointer select-none" style={{ perspective: '1000px' }} onClick={() => setFlipped(f => !f)}>
           <div className="relative w-full transition-all duration-500"
@@ -398,7 +398,7 @@ function CardView({ card, onRate }: { card: RankCard; onRate: (r: 1 | 2 | 3) => 
               style={{ backfaceVisibility: 'hidden', boxShadow: ec.glow, borderColor: 'transparent' }}
             >
               <div className={`h-1 w-full shrink-0 ${ec.stripe}`} />
-              <div className="flex flex-col flex-1 justify-between p-6">
+              <div className="flex flex-col flex-1 justify-between p-4 sm:p-6">
                 <div className="flex justify-between items-start flex-wrap gap-2">
                   <div className="flex items-center gap-2">
                     <EloBadge elo={card.elo} large />
@@ -416,7 +416,7 @@ function CardView({ card, onRate }: { card: RankCard; onRate: (r: 1 | 2 | 3) => 
                     {card.q}
                   </div>
                 </div>
-                <div className="text-[11px] text-muted text-center">Clique para revelar a resposta</div>
+                <div className="text-[11px] text-muted text-center">Toque para revelar a resposta</div>
               </div>
             </div>
 
@@ -426,7 +426,7 @@ function CardView({ card, onRate }: { card: RankCard; onRate: (r: 1 | 2 | 3) => 
               style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', boxShadow: ec.backGlow }}
             >
               <div className={`h-1 w-full shrink-0 ${ec.stripe}`} />
-              <div className="flex flex-col flex-1 justify-between p-6">
+              <div className="flex flex-col flex-1 justify-between p-4 sm:p-6">
                 <div className="flex justify-between items-start flex-wrap gap-2">
                   <span className={`text-[10px] font-bold uppercase tracking-widest ${ec.label}`}>
                     {ec.icon} Resposta
@@ -500,7 +500,7 @@ function MasteryCardView({ card, onRate }: { card: RankCard; onRate: (r: Mastery
       <div className="relative">
       <button
         onClick={() => setEditing(true)}
-        className="absolute top-2 right-2 z-20 w-7 h-7 flex items-center justify-center rounded text-[12px] text-muted opacity-40 hover:opacity-100 hover:bg-surface3 transition-all"
+        className="absolute top-2 right-2 z-20 w-9 h-9 flex items-center justify-center rounded text-[13px] text-muted opacity-40 hover:opacity-100 hover:bg-surface3 transition-all"
       >✏</button>
       <div
         className="cursor-pointer select-none"
@@ -516,7 +516,7 @@ function MasteryCardView({ card, onRate }: { card: RankCard; onRate: (r: Mastery
             style={{ backfaceVisibility: 'hidden', boxShadow: ec.glow, borderColor: 'transparent' }}
           >
             <div className={`h-1 w-full shrink-0 ${ec.stripe}`} />
-            <div className="flex flex-col flex-1 justify-between p-6">
+            <div className="flex flex-col flex-1 justify-between p-4 sm:p-6">
               <div className="flex justify-between items-start flex-wrap gap-2">
                 <div className="flex items-center gap-2">
                   <EloBadge elo={card.elo} large />
@@ -534,7 +534,7 @@ function MasteryCardView({ card, onRate }: { card: RankCard; onRate: (r: Mastery
                   {card.q}
                 </div>
               </div>
-              <div className="text-[11px] text-muted text-center">Clique para revelar a resposta</div>
+              <div className="text-[11px] text-muted text-center">Toque para revelar a resposta</div>
             </div>
           </div>
 
@@ -544,7 +544,7 @@ function MasteryCardView({ card, onRate }: { card: RankCard; onRate: (r: Mastery
             style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', boxShadow: ec.backGlow }}
           >
             <div className={`h-1 w-full shrink-0 ${ec.stripe}`} />
-            <div className="flex flex-col flex-1 justify-between p-6">
+            <div className="flex flex-col flex-1 justify-between p-4 sm:p-6">
               <div className="flex justify-between items-start flex-wrap gap-2">
                 <span className={`text-[10px] font-bold uppercase tracking-widest ${ec.label}`}>
                   {ec.icon} Resposta
