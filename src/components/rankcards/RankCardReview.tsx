@@ -267,49 +267,116 @@ function EloFilter({
   )
 }
 
+// ── CardEditForm ──────────────────────────────────────────────────────────────
+
+const EDIT_ELOS: { elo: RankCardElo; icon: string; color: string }[] = [
+  { elo: 'Platina', icon: '◆', color: 'border-cyan-400/60 bg-cyan-400/10 text-cyan-400' },
+  { elo: 'Ouro',    icon: '★', color: 'border-amber-400/60 bg-amber-400/10 text-amber-400' },
+  { elo: 'Prata',   icon: '▲', color: 'border-slate-400/60 bg-slate-400/10 text-slate-400' },
+  { elo: 'Bronze',  icon: '●', color: 'border-orange-600/60 bg-orange-600/10 text-orange-500' },
+]
+
+function CardEditForm({ card, onClose }: { card: RankCard; onClose: () => void }) {
+  const updateRankCard = useStore(s => s.updateRankCard)
+  const [q,          setQ]          = useState(card.q)
+  const [a,          setA]          = useState(card.a)
+  const [elo,        setElo]        = useState<RankCardElo>(card.elo)
+  const [bloco,      setBloco]      = useState(card.bloco_tematico)
+  const [disciplina, setDisciplina] = useState(card.disciplina)
+  const [materia,    setMateria]    = useState(card.materia)
+  const [incidencia, setIncidencia] = useState(card.incidencia)
+
+  function save() {
+    const qt = q.trim(); const at = a.trim()
+    if (!qt || !at) return
+    updateRankCard(card.id, {
+      q: qt, a: at, elo,
+      bloco_tematico: bloco.trim(),
+      disciplina: disciplina.trim(),
+      materia: materia.trim(),
+      incidencia,
+    })
+    onClose()
+  }
+
+  const inp = 'w-full bg-surface border border-border rounded-sm px-3 py-2 text-[12px] text-text outline-none focus:border-amber-400/60'
+  const lbl = 'text-[10px] font-bold uppercase tracking-wider text-muted'
+
+  return (
+    <div className="bg-surface2 border border-border rounded-card p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Editar EloCard</span>
+        <button onClick={onClose} className="text-muted hover:text-text text-[13px]">✕</button>
+      </div>
+
+      {/* Elo */}
+      <div className="space-y-1.5">
+        <label className={lbl}>Elo</label>
+        <div className="flex gap-2">
+          {EDIT_ELOS.map(e => (
+            <button key={e.elo} onClick={() => setElo(e.elo)}
+              className={`flex-1 py-1.5 rounded-sm border text-[11px] font-bold transition-all ${e.color} ${elo === e.elo ? 'opacity-100 ring-1 ring-current' : 'opacity-40 hover:opacity-70'}`}
+            >{e.icon} {e.elo}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Disciplina + Matéria */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <label className={lbl}>Disciplina</label>
+          <input value={disciplina} onChange={e => setDisciplina(e.target.value)} className={inp} />
+        </div>
+        <div className="space-y-1">
+          <label className={lbl}>Matéria</label>
+          <input value={materia} onChange={e => setMateria(e.target.value)} className={inp} />
+        </div>
+      </div>
+
+      {/* Bloco + Incidência */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="col-span-2 space-y-1">
+          <label className={lbl}>Bloco Temático</label>
+          <input value={bloco} onChange={e => setBloco(e.target.value)} className={inp} />
+        </div>
+        <div className="space-y-1">
+          <label className={lbl}>Incidência</label>
+          <input type="number" min={1} value={incidencia} onChange={e => setIncidencia(Number(e.target.value))} className={inp} />
+        </div>
+      </div>
+
+      {/* Pergunta */}
+      <div className="space-y-1">
+        <label className={lbl}>Pergunta</label>
+        <textarea value={q} onChange={e => setQ(e.target.value)} rows={4}
+          className={`${inp} resize-y`} />
+      </div>
+
+      {/* Resposta */}
+      <div className="space-y-1">
+        <label className={lbl}>Resposta</label>
+        <textarea value={a} onChange={e => setA(e.target.value)} rows={3}
+          className={`${inp} resize-y`} />
+      </div>
+
+      <div className="flex gap-2 pt-1">
+        <button onClick={onClose} className="flex-1 py-2 rounded-sm text-[11px] text-muted border border-border hover:text-text">Cancelar</button>
+        <button onClick={save} disabled={!q.trim() || !a.trim()}
+          className="flex-1 py-2 rounded-sm text-[11px] font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white disabled:opacity-40"
+        >Salvar</button>
+      </div>
+    </div>
+  )
+}
+
 // ── CardView ──────────────────────────────────────────────────────────────────
 
 function CardView({ card, onRate }: { card: RankCard; onRate: (r: 1 | 2 | 3) => void }) {
   const [flipped, setFlipped] = useState(false)
   const [editing, setEditing] = useState(false)
-  const [editQ,   setEditQ]   = useState(card.q)
-  const [editA,   setEditA]   = useState(card.a)
-  const updateRankCard = useStore(s => s.updateRankCard)
-
-  function saveEdit() {
-    const q = editQ.trim(); const a = editA.trim()
-    if (!q || !a) return
-    updateRankCard(card.id, { q, a })
-    setEditing(false)
-  }
 
   if (editing) {
-    return (
-      <div className="bg-surface2 border border-border rounded-card p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Editar EloCard</span>
-          <button onClick={() => setEditing(false)} className="text-muted hover:text-text text-[13px]">✕</button>
-        </div>
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Pergunta</label>
-          <textarea value={editQ} onChange={e => setEditQ(e.target.value)} rows={5}
-            className="w-full bg-surface border border-border rounded-sm px-3 py-2 text-[12px] text-text resize-y outline-none focus:border-amber-400/60"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-muted">Resposta</label>
-          <textarea value={editA} onChange={e => setEditA(e.target.value)} rows={3}
-            className="w-full bg-surface border border-border rounded-sm px-3 py-2 text-[12px] text-text resize-y outline-none focus:border-amber-400/60"
-          />
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => setEditing(false)} className="flex-1 py-2 rounded-sm text-[11px] text-muted border border-border hover:text-text">Cancelar</button>
-          <button onClick={saveEdit} disabled={!editQ.trim() || !editA.trim()}
-            className="flex-1 py-2 rounded-sm text-[11px] font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white disabled:opacity-40"
-          >Salvar</button>
-        </div>
-      </div>
-    )
+    return <CardEditForm card={card} onClose={() => setEditing(false)} />
   }
 
   const ec = ELO_CARD[card.elo]
@@ -318,7 +385,7 @@ function CardView({ card, onRate }: { card: RankCard; onRate: (r: 1 | 2 | 3) => 
     <div className="space-y-4">
       <div className="relative">
         <button
-          onClick={() => { setEditQ(card.q); setEditA(card.a); setEditing(true) }}
+          onClick={() => setEditing(true)}
           className="absolute top-2 right-2 z-20 w-7 h-7 flex items-center justify-center rounded text-[12px] text-muted opacity-40 hover:opacity-100 hover:bg-surface3 transition-all"
         >✏</button>
         <div className="cursor-pointer select-none" style={{ perspective: '1000px' }} onClick={() => setFlipped(f => !f)}>
@@ -420,11 +487,21 @@ function buildMasteryQueue(filters: Filters, source: RankCard[]): RankCard[] {
 type MasteryRating = 'facil' | 'medio' | 'dificil'
 
 function MasteryCardView({ card, onRate }: { card: RankCard; onRate: (r: MasteryRating) => void }) {
-  const [flipped, setFlipped] = useState(false)
+  const [flipped,  setFlipped]  = useState(false)
+  const [editing,  setEditing]  = useState(false)
   const ec = ELO_CARD[card.elo]
+
+  if (editing) {
+    return <CardEditForm card={card} onClose={() => setEditing(false)} />
+  }
 
   return (
     <div className="space-y-4">
+      <div className="relative">
+      <button
+        onClick={() => setEditing(true)}
+        className="absolute top-2 right-2 z-20 w-7 h-7 flex items-center justify-center rounded text-[12px] text-muted opacity-40 hover:opacity-100 hover:bg-surface3 transition-all"
+      >✏</button>
       <div
         className="cursor-pointer select-none"
         style={{ perspective: '1000px' }}
@@ -482,6 +559,7 @@ function MasteryCardView({ card, onRate }: { card: RankCard; onRate: (r: Mastery
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {flipped && (

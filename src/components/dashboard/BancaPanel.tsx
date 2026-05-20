@@ -497,6 +497,7 @@ function ErrosPanel() {
     }
     if (totalErros === 0) return null
     return Object.entries(map)
+      .filter(([type]) => type in ERROR_META)
       .map(([type, count]) => ({ type, count, share: Math.round((count / totalErros) * 100) }))
       .sort((a, b) => b.count - a.count)
   }, [sessions])

@@ -256,7 +256,7 @@ function extractQuestionText(block) {
 }
 
 // ── Extrai a alternativa correta ──
-function extractCorrectAnswer(block, selectedLetter) {
+function extractCorrectAnswer(block, selectedLetter, isCorrect) {
   const text = block.innerText || '';
 
   // Helper: dado uma letra, tenta extrair o texto completo da alternativa
@@ -269,9 +269,11 @@ function extractCorrectAnswer(block, selectedLetter) {
     return null;
   }
 
-  // Se o usuário acertou e sabemos qual letra ele selecionou
-  const fromSelected = findAnswerText(selectedLetter);
-  if (fromSelected) return fromSelected;
+  // Só usa a letra selecionada como gabarito se o usuário acertou
+  if (isCorrect) {
+    const fromSelected = findAnswerText(selectedLetter);
+    if (fromSelected) return fromSelected;
+  }
 
   // "Você errou! Resposta: B" ou "Resposta: B"
   const respostaMatch = text.match(/[Rr]esposta:\s*([A-E])\b/);
@@ -310,7 +312,7 @@ function extractCorrectAnswer(block, selectedLetter) {
 }
 
 // ── Parseia todos os dados do bloco ──
-function parseQuestionBlock(block, selectedLetter) {
+function parseQuestionBlock(block, selectedLetter, isCorrect) {
   const text = block.innerText || '';
 
   const qMatch = text.match(/Q(\d{5,})/);
@@ -354,7 +356,7 @@ function parseQuestionBlock(block, selectedLetter) {
   if (bancaMatch) banca = bancaMatch[1].trim();
 
   const questionText = extractQuestionText(block);
-  const correctAnswer = extractCorrectAnswer(block, selectedLetter);
+  const correctAnswer = extractCorrectAnswer(block, selectedLetter, isCorrect);
 
   return { questionId, disc, mat, banca, questionText, correctAnswer };
 }
@@ -498,7 +500,7 @@ function showErrorModal(onSelect) {
 
 // ── Processa resultado a partir de um bloco já identificado ──
 function processBlock(block, isCorrect, selectedLetter) {
-  const data = parseQuestionBlock(block, selectedLetter);
+  const data = parseQuestionBlock(block, selectedLetter, isCorrect);
   if (!data) {
     showToast('⚠️ StudyBI: não foi possível identificar a questão no DOM', '#ef4444');
     return;

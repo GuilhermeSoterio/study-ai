@@ -12,6 +12,8 @@ CREATE TABLE sessions (
   correct INTEGER NOT NULL DEFAULT 0,
   banca TEXT DEFAULT 'Não informada',
   source TEXT,
+  error_type TEXT CHECK (error_type IS NULL OR error_type IN ('nao_sabia', 'interpretacao', 'distracao', 'pegadinha', 'tempo')),
+  tema TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;

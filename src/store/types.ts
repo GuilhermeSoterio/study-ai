@@ -53,8 +53,9 @@ export interface AppState {
   disc:      Record<string, string[]>
   skillTree: TNode[]
   character: CharacterData | null
-  saveConfig: (cfg: Partial<UserConfig>) => Promise<void>
-  saveDisc:   (disc: Record<string, string[]>) => Promise<void>
+  saveConfig:       (cfg: Partial<UserConfig>) => Promise<void>
+  saveDisc:         (disc: Record<string, string[]>) => Promise<void>
+  refreshCharacter: () => Promise<void>
 
   // ── Purge ─────────────────────────────────────────────────────────────
   purgeRecords: PurgeRecord[]

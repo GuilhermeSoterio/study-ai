@@ -1,13 +1,13 @@
 import { type StateCreator } from 'zustand'
 import { supabase } from '@/lib/supabase'
 import { backendApi } from '@/lib/backendApi'
-import type { UserConfig } from '@/types'
+import type { UserConfig, CharacterData } from '@/types'
 import type { AppState } from '../types'
 import { DEFAULT_CONFIG, DEFAULT_DISC, DEFAULT_BANCAS } from '../defaults'
 import { toast } from '../toastStore'
 
 export type ConfigSlice = Pick<AppState,
-  'config' | 'bancas' | 'disc' | 'skillTree' | 'character' | 'saveConfig' | 'saveDisc'
+  'config' | 'bancas' | 'disc' | 'skillTree' | 'character' | 'saveConfig' | 'saveDisc' | 'refreshCharacter'
 >
 
 export const createConfigSlice: StateCreator<AppState, [], [], ConfigSlice> = (set, get) => ({
@@ -28,6 +28,11 @@ export const createConfigSlice: StateCreator<AppState, [], [], ConfigSlice> = (s
         toast.error('Erro ao salvar configurações.')
       }
     }
+  },
+
+  refreshCharacter: async () => {
+    const r = await backendApi.get<{ data: CharacterData }>('/v1/character').catch(() => null)
+    if (r?.data) set({ character: r.data })
   },
 
   saveDisc: async (newDisc: Record<string, string[]>) => {

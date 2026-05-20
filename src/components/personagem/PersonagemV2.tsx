@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore } from '@/store'
 import { FamilyTree } from './FamilyTree'
 import type { TNode } from './types'
@@ -143,13 +143,20 @@ function SkillTreeV2({ roots, sessions }: { roots: TNode[]; sessions: SessionSta
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export function PersonagemV2() {
-  // Fix #1 — lê do store, sem fetch local. Dados carregados uma vez no loadAll.
-  const char     = useStore(s => s.character)
-  const disc     = useStore(s => s.disc)
-  const sessions = useStore(s => s.sessionStats)
-  const loading  = useStore(s => s.loading)
+  const char             = useStore(s => s.character)
+  const disc             = useStore(s => s.disc)
+  const sessions         = useStore(s => s.sessionStats)
+  const loading          = useStore(s => s.loading)
+  const refreshCharacter = useStore(s => s.refreshCharacter)
+  const [retrying, setRetrying] = useState(false)
 
   const roots = useMemo(() => discToForest(disc), [disc])
+
+  async function handleRetry() {
+    setRetrying(true)
+    await refreshCharacter()
+    setRetrying(false)
+  }
 
   if (loading) {
     return (
@@ -159,22 +166,36 @@ export function PersonagemV2() {
     )
   }
 
-  if (!char) {
-    return (
-      <div className="flex items-center justify-center h-64 text-muted text-sm gap-2">
-        ⚠️ Dados do personagem não disponíveis.
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 text-[11px] text-muted bg-surface2 border border-border rounded-card px-3 py-2">
-        <span className="text-accent font-bold">v2</span>
-        Dados consumidos do backend Go — <span className="font-mono">localhost:8080</span>
-      </div>
-      <CharacterPanel char={char} />
-      <Achievements achievements={char.achievements} />
+      {char ? (
+        <>
+          <CharacterPanel char={char} />
+          <Achievements achievements={char.achievements} />
+        </>
+      ) : (
+        <div className="bg-surface border border-border rounded-card p-5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-xl">🔌</span>
+            <div>
+              <div className="text-[13px] font-bold text-text">Backend offline</div>
+              <div className="text-[11px] text-muted">
+                Não foi possível conectar em{' '}
+                <span className="font-mono text-warning">localhost:8080</span>.
+                Suba o servidor Go para ver XP e conquistas.
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={handleRetry}
+            disabled={retrying}
+            className="shrink-0 px-3 py-1.5 border border-border rounded-sm text-xs text-muted hover:text-text hover:border-primary/40 transition-all disabled:opacity-50"
+          >
+            {retrying ? '⏳ Buscando...' : '↻ Tentar novamente'}
+          </button>
+        </div>
+      )}
+
       <SkillTreeV2 roots={roots} sessions={sessions} />
     </div>
   )

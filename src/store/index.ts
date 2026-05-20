@@ -56,6 +56,33 @@ function canonicalizeDiscKeys(
   return result
 }
 
+// Mescla treeDisc (fonte primária) com extra (disciplines ou DEFAULT_DISC):
+// - disciplinas que só existem em extra são adicionadas ao resultado
+// - disciplinas presentes em ambos: mantém as matérias do tree e acrescenta as de extra que faltarem
+function mergeDisc(
+  tree: Record<string, string[]>,
+  extra: Record<string, string[]> | null,
+): Record<string, string[]> {
+  if (!extra || Object.keys(extra).length === 0) return tree
+  const normTreeKeys = new Map<string, string>()
+  for (const k of Object.keys(tree)) normTreeKeys.set(k.toLowerCase().trim(), k)
+
+  const result: Record<string, string[]> = { ...tree }
+  for (const [k, mats] of Object.entries(extra)) {
+    const canon = normTreeKeys.get(k.toLowerCase().trim())
+    if (canon) {
+      // disciplina já existe no tree: só acrescenta matérias ausentes
+      for (const m of mats) {
+        if (!result[canon].includes(m)) result[canon].push(m)
+      }
+    } else {
+      // disciplina exclusiva do extra: adiciona inteira
+      result[k] = [...mats]
+    }
+  }
+  return result
+}
+
 export const useStore = create<AppState>()((...a) => ({
   ...createAuthSlice(...a),
   ...createSessionsSlice(...a),
@@ -148,7 +175,7 @@ export const useStore = create<AppState>()((...a) => ({
       purgeRecords: purgeR.data ?? [],
       questoes:     questR.data ?? [],
       disc:         hasTree
-                      ? treeDisc
+                      ? mergeDisc(treeDisc, discData ?? DEFAULT_DISC)
                       : (discData && Object.keys(discData).length > 0)
                         ? canonicalizeDiscKeys(discData, DEFAULT_DISC)
                         : DEFAULT_DISC,
