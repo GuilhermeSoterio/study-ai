@@ -30,8 +30,8 @@ export default function App() {
   return (
     <div className="flex min-h-screen bg-bg">
       <Header />
-      <div className="flex-1 min-w-0 flex gap-5 items-start px-8 py-6">
-        <main className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 flex md:gap-5 items-start px-3 py-4 pb-20 md:px-8 md:py-6 md:pb-6">
+        <main className="flex-1 min-w-0 w-full">
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
