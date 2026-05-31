@@ -498,6 +498,23 @@ function showErrorModal(onSelect) {
   });
 }
 
+// ── Detecta resultado (acerto/erro) a partir do texto do bloco ──
+// Confia APENAS nas mensagens de correção automática do QConcursos
+// ("Você errou!" / "Você acertou!"). NÃO usa "Resolvi certo/errado"
+// (são rótulos dos botões de auto-avaliação, presentes em qualquer estado
+// → causavam falsos acertos) nem "Resposta correta" (badge da alternativa).
+// O erro tem prioridade na checagem.
+function detectResult(text) {
+  const t = text || '';
+  // Erro tem prioridade. Cobre dois formatos do QConcursos:
+  //  • múltipla escolha: "Você errou! Resposta: B"
+  //  • certo/errado (ex. Quadrix): "Incorreta. Gabarito oficial da banca: Certo"
+  // "incorreta" precisa ser testado ANTES de "correta" (contém a substring).
+  if (/você\s+errou|incorreta/i.test(t))         return { isCorrect: false, isWrong: true };
+  if (/você\s+acertou|\bcorreta\b/i.test(t))     return { isCorrect: true,  isWrong: false };
+  return { isCorrect: false, isWrong: false };
+}
+
 // ── Processa resultado a partir de um bloco já identificado ──
 function processBlock(block, isCorrect, selectedLetter) {
   const data = parseQuestionBlock(block, selectedLetter, isCorrect);
@@ -536,41 +553,25 @@ document.addEventListener('click', (e) => {
 
   if (!/responder/i.test(text) || text.length > 60) return;
 
-  // Tenta encontrar o bloco desta questão a partir do botão
+  // Ancora no bloco DESTA questão (a partir do botão clicado).
   const block = findQuestionBlock(el);
+  if (!block) return; // sem bloco identificado, não arrisca registrar errado
   const optionAtClick = selectedOption; // salva opção selecionada no momento
 
-  setTimeout(() => {
-    if (block) {
-      const blockText = block.innerText || '';
-      const isCorrect = /acertou|você acertou|resolvi certo|resposta correta|correto!/i.test(blockText);
-      const isWrong   = /você errou|resolvi errado/i.test(blockText);
-      if (isCorrect || isWrong) { processBlock(block, isCorrect, optionAtClick); return; }
+  // Faz polling do PRÓPRIO bloco até o resultado de correção aparecer (~6s).
+  // Isso evita capturar o veredito de outra questão da lista (10 por página).
+  let tries = 0;
+  const maxTries = 20; // 20 × 300ms = 6s
+  const iv = setInterval(() => {
+    tries++;
+    const { isCorrect, isWrong } = detectResult(block.innerText || '');
+    if (isCorrect || isWrong) {
+      clearInterval(iv);
+      processBlock(block, isCorrect, optionAtClick);
+    } else if (tries >= maxTries) {
+      clearInterval(iv);
     }
-
-    // Fallback: varre a página mas só processa questões ainda não registradas
-    let processed = false;
-    const all = document.querySelectorAll('*');
-    for (const node of all) {
-      const t = (node.innerText || node.textContent || '').trim();
-      if (t.length > 150 || t.length < 5) continue;
-      if (!/acertou|você errou|resolvi/i.test(t)) continue;
-      const isCorrect = /acertou|você acertou|resolvi certo|resposta correta|correto!/i.test(t);
-      const isWrong   = /você errou|resolvi errado/i.test(t);
-      if (!isCorrect && !isWrong) continue;
-      const b = findQuestionBlock(node);
-      if (!b) continue;
-      const data = parseQuestionBlock(b);
-      if (!data || logged.has(data.questionId)) continue;
-      processBlock(b, isCorrect, optionAtClick);
-      processed = true;
-      break;
-    }
-
-    if (!processed) {
-      showToast('⚠️ StudyBI: resultado detectado mas questão não identificada', '#ef4444');
-    }
-  }, 1500);
+  }, 300);
 }, true);
 
 // ── Estratégia 2: MutationObserver como fallback ──
@@ -579,14 +580,18 @@ const observer = new MutationObserver(mutations => {
     for (const node of mutation.addedNodes) {
       if (node.nodeType !== 1) continue;
       const text = node.innerText || node.textContent || '';
-      if (!/acertou|você errou|resolvi/i.test(text)) continue;
+      if (!/você\s+(errou|acertou)/i.test(text)) continue;
 
-      const isCorrect = /acertou|você acertou|resolvi certo|resposta correta|correto!/i.test(text);
-      const isWrong   = /você errou|resolvi errado/i.test(text);
+      // Sobe para o bloco e decide o veredito pelo texto DO PRÓPRIO bloco,
+      // nunca pelo nó disparador (que pode ser de outra questão).
+      const block = findQuestionBlock(node);
+      if (!block) continue;
+      const { isCorrect, isWrong } = detectResult(block.innerText || '');
       if (!isCorrect && !isWrong) continue;
 
-      const block = findQuestionBlock(node);
-      if (block) processBlock(block, isCorrect);
+      const data = parseQuestionBlock(block, '', isCorrect);
+      if (!data || logged.has(data.questionId)) continue;
+      processBlock(block, isCorrect);
     }
   }
 });
