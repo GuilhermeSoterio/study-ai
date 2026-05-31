@@ -1,5 +1,43 @@
-import type { SessionStat } from '@/types'
+import type { SessionStat, Flashcard } from '@/types'
 import type { TNode, Pos, NodeStats } from './types'
+
+// ── Clipboard ───────────────────────────────────────────────────────────────
+
+/** Formata um flashcard para colar numa IA pedindo explicação. */
+export function flashcardToText(card: Flashcard): string {
+  const ctx = [card.disc, card.mat].filter(Boolean).join(' › ')
+  return [
+    'Explique esta questão de forma clara e didática:',
+    '',
+    `Pergunta: ${card.q}`,
+    '',
+    `Gabarito/Resposta: ${card.a}`,
+    ctx ? `\nContexto: ${ctx}${card.banca ? ` · Banca: ${card.banca}` : ''}` : '',
+  ].join('\n').trim()
+}
+
+/** Copia texto para a área de transferência, com fallback para navegadores antigos. */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch { /* cai no fallback abaixo */ }
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    const ok = document.execCommand('copy')
+    document.body.removeChild(ta)
+    return ok
+  } catch {
+    return false
+  }
+}
 
 // Returns 'YYYY-MM-DD' in local time (avoids UTC-offset bugs with toISOString)
 export function localDate(d: Date = new Date()): string {

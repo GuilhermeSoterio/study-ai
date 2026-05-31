@@ -4,6 +4,7 @@ import { isDue, calcNextDue, dueCount } from '@/lib/srs'
 import { localDate } from '@/lib/utils'
 import type { Flashcard } from '@/types'
 import { usePomodoro, PomodoroBar } from './PomodoroTimer'
+import { CopyCardButton } from './CopyCardButton'
 
 function SlicePicker({ total, value, onChange }: { total: number; value: number; onChange: (v: number) => void }) {
   const opts = [1, 2, 3, 4, 5, 8, 10].filter(n => n === 1 || Math.ceil(total / n) >= 3)
@@ -129,13 +130,16 @@ function CardView({ card, onRate }: CardViewProps) {
   return (
     <div className="space-y-4">
       <div className="relative">
-        <button
-          onClick={openEdit}
-          className="absolute top-2 right-2 z-20 w-7 h-7 flex items-center justify-center rounded text-[12px] text-muted opacity-40 hover:opacity-100 hover:bg-surface3 transition-all"
-          title="Editar flashcard"
-        >
-          ✏
-        </button>
+        <div className="absolute top-2 right-2 z-20 flex items-center gap-1">
+          <CopyCardButton card={card} variant="icon" />
+          <button
+            onClick={openEdit}
+            className="w-7 h-7 flex items-center justify-center rounded text-[12px] text-muted opacity-40 hover:opacity-100 hover:bg-surface3 transition-all"
+            title="Editar flashcard"
+          >
+            ✏
+          </button>
+        </div>
         <div
           className="cursor-pointer select-none"
           style={{ perspective: '1000px' }}

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useStore } from '@/store'
 import { isDue } from '@/lib/srs'
+import { CopyCardButton } from './CopyCardButton'
 import type { Flashcard } from '@/types'
 
 function isOrphan(card: Flashcard, disc: Record<string, string[]>): boolean {
@@ -316,6 +317,7 @@ function CardItem({
           {/* Ações */}
           {!editing && (
             <div className="flex gap-2 pt-1 flex-wrap">
+              <CopyCardButton card={card} />
               {!ignored && (
                 <button
                   onClick={e => { e.stopPropagation(); setEditing(true) }}
